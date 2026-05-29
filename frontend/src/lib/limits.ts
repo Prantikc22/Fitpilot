@@ -2,9 +2,11 @@ import { supabase } from "./supabase";
 
 export const LIMITS = {
   free_scans: 5,
-  free_ai_gens: 5,
-  pro_scans: 50,
-  pro_ai_gens: 50,
+  free_ai_gens: 1,        // 1 new meal plan per month for free users
+  free_ai_regens: 3,      // max 3 regenerations total for free users
+  pro_scans: 999,
+  pro_ai_gens: 999,       // Unlimited for Pro users
+  pro_ai_regens: 999,
 };
 
 type Counters = {

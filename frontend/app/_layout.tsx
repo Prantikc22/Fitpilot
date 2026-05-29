@@ -17,6 +17,7 @@ import { useFonts } from "expo-font";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { SubscriptionProvider } from "@/src/contexts/SubscriptionContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,8 +43,10 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FAFAFA" } }} />
+          <SubscriptionProvider>
+            <StatusBar style="dark" />
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FAFAFA" } }} />
+          </SubscriptionProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

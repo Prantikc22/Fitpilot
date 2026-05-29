@@ -45,7 +45,7 @@ export default function Home() {
     const todayDate = new Date().toISOString().slice(0, 10);
 
     const [{ data: foods }, { data: wl }, { data: h }] = await Promise.all([
-      supabase.from("food_logs").select("calories,protein").eq("user_id", userId).gte("logged_at", todayISO),
+      supabase.from("food_logs").select("calories,protein,carbs,fat").eq("user_id", userId).gte("logged_at", todayISO),
       supabase
         .from("weight_logs")
         .select("weight_kg,logged_at")
@@ -57,8 +57,12 @@ export default function Home() {
 
     const cals = (foods || []).reduce((s, f: any) => s + (Number(f.calories) || 0), 0);
     const pro = (foods || []).reduce((s, f: any) => s + (Number(f.protein) || 0), 0);
+    const carbs = (foods || []).reduce((s, f: any) => s + (Number(f.carbs) || 0), 0);
+    const fat = (foods || []).reduce((s, f: any) => s + (Number(f.fat) || 0), 0);
     setTodayCals(cals);
     setTodayPro(pro);
+    setTodayCarbs(carbs);
+    setTodayFat(fat);
     setHabit(h ? { water_ml: h.water_ml || 0, steps: h.steps || 0, exercise_done: !!h.exercise_done } : null);
     setWeights(
       (wl || []).map((w: any) => ({ date: w.logged_at, weight: Number(w.weight_kg) })),
@@ -187,7 +191,7 @@ export default function Home() {
               <Sparkles color="#fff" size={16} />
               <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Today's Coach Note</Text>
             </View>
-            <Text style={styles.aiText}>{aiSummary}</Text>
+            <MarkdownText dark>{aiSummary}</MarkdownText>
           </Card>
         ) : null}
 
@@ -306,7 +310,7 @@ export default function Home() {
               testID="metric-steps"
               label="Steps"
               value={(habit?.steps || 0).toLocaleString()}
-              hint="Connect Health to auto-sync"
+              hint="Auto-sync from fitness app only"
             />
           </View>
           <View style={styles.gridCol}>
@@ -383,26 +387,10 @@ const styles = StyleSheet.create({
   fabPrimary: { backgroundColor: colors.brand },
   fabSecondary: { backgroundColor: colors.brandLight },
   fabText: { color: "#fff", fontFamily: fonts.bodySemi, fontSize: 15 },
-});
-  paddingHorizontal: 20,
-    flexDirection: "row",
-    gap: 10,
-  },
-  fab: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 999,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  fabPrimary: { backgroundColor: colors.brand },
-  fabSecondary: { backgroundColor: colors.brandLight },
-  fabText: { color: "#fff", fontFamily: fonts.bodySemi, fontSize: 15 },
+  waterBtn: { backgroundColor: colors.brandLight, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
+  waterBtnText: { fontFamily: fonts.bodySemi, color: colors.brand, fontSize: 14 },
+  shortcutRow: { flexDirection: "row", gap: 10, marginTop: 16 },
+  shortcut: { flex: 1, backgroundColor: colors.bgAlt, borderRadius: 16, padding: 12, alignItems: "center", gap: 6 },
+  shortcutIcon: { fontSize: 22 },
+  shortcutText: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textAlign: "center" },
 });

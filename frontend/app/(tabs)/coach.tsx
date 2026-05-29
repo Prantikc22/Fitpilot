@@ -133,7 +133,11 @@ export default function Coach() {
         }
         renderItem={({ item }) => (
           <View style={[styles.bubble, item.role === "user" ? styles.bubbleUser : styles.bubbleAI]}>
-            <Text style={[styles.bubbleText, item.role === "user" && { color: "#fff" }]}>{item.content}</Text>
+            {item.role === "user" ? (
+              <Text style={[styles.bubbleText, { color: "#fff" }]}>{item.content}</Text>
+            ) : (
+              <MarkdownText>{item.content}</MarkdownText>
+            )}
           </View>
         )}
       />
