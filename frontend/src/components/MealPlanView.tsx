@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Coffee, Soup, UtensilsCrossed, Cookie, Clock, Flame, Sparkles, Wand2 } from "lucide-react-native";
+import { Coffee, Soup, UtensilsCrossed, Cookie, Clock, Flame, Sparkles, Wand2, Beef } from "lucide-react-native";
+import Animated, { FadeInDown, FadeIn, Layout } from "react-native-reanimated";
 import type { MealPlan, Meal } from "@/src/lib/api";
 import { colors, fonts } from "@/src/lib/theme";
 
@@ -11,15 +12,30 @@ const META = {
   snack: { label: "Snack", Icon: Cookie, color: "#4A708B" },
 } as const;
 
-function MealBlock({ kind, meal }: { kind: keyof typeof META; meal?: Meal }) {
-  if (!meal) return null;
+function MealBlock({ kind, meal, index }: { kind: keyof typeof META; meal?: Meal; index: number }) {
+  if (!meal || !meal.name) return null;
   const { label, Icon, color } = META[kind];
+  
+  // Safely get values with defaults
+  const calories = meal.calories ?? 0;
+  const protein = meal.protein ?? 0;
+  const items = Array.isArray(meal.items) ? meal.items : [];
+  const prepTime = meal.prep_time || '';
+  
   return (
-    <View style={styles.meal} testID={`meal-${kind}`}>
+    <Animated.View 
+      entering={FadeInDown.delay(index * 100).springify().damping(14)}
+      layout={Layout.springify()}
+      style={styles.meal} 
+      testID={`meal-${kind}`}
+    >
       <View style={styles.mealHead}>
-        <View style={[styles.mealIcon, { backgroundColor: color + "20" }]}>
+        <Animated.View 
+          entering={FadeIn.delay(index * 100 + 200)}
+          style={[styles.mealIcon, { backgroundColor: color + "20" }]}
+        >
           <Icon color={color} size={18} />
-        </View>
+        </Animated.View>
         <View style={{ flex: 1 }}>
           <Text style={styles.mealLabel}>{label}</Text>
           <Text style={styles.mealName} numberOfLines={2}>
@@ -27,32 +43,36 @@ function MealBlock({ kind, meal }: { kind: keyof typeof META; meal?: Meal }) {
           </Text>
         </View>
         <View style={styles.macroBlock}>
-          <Text style={styles.macroVal}>{meal.calories}</Text>
+          <Text style={styles.macroVal}>{Math.round(calories)}</Text>
           <Text style={styles.macroUnit}>kcal</Text>
         </View>
       </View>
-      {meal.items?.length ? (
+      {items.length > 0 && (
         <View style={styles.itemsRow}>
-          {meal.items.map((it, i) => (
-            <View key={i} style={styles.itemPill}>
-              <Text style={styles.itemPillText}>{it}</Text>
-            </View>
+          {items.slice(0, 5).map((it, i) => (
+            <Animated.View 
+              key={i} 
+              entering={FadeIn.delay(index * 100 + 300 + i * 50)}
+              style={styles.itemPill}
+            >
+              <Text style={styles.itemPillText}>{String(it)}</Text>
+            </Animated.View>
           ))}
         </View>
-      ) : null}
+      )}
       <View style={styles.metaRow}>
-        {meal.prep_time ? (
+        {prepTime ? (
           <View style={styles.metaPill}>
             <Clock color={colors.textMute} size={11} />
-            <Text style={styles.metaText}>{meal.prep_time}</Text>
+            <Text style={styles.metaText}>{prepTime}</Text>
           </View>
         ) : null}
         <View style={styles.metaPill}>
-          <Flame color={colors.terracotta} size={11} />
-          <Text style={styles.metaText}>{meal.protein}g protein</Text>
+          <Beef color={colors.terracotta} size={11} />
+          <Text style={styles.metaText}>{Math.round(protein)}g protein</Text>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -63,42 +83,65 @@ export function MealPlanView({
   plan: MealPlan;
   onImprove?: () => void;
 }) {
+  // Safely extract totals with defaults
+  const totalCalories = plan?.total_calories ?? 0;
+  const totalProtein = plan?.total_protein ?? 0;
+  const tip = plan?.tip || '';
+  
+  // Check if we have any valid meals
+  const hasMeals = plan?.breakfast?.name || plan?.lunch?.name || plan?.dinner?.name || plan?.snack?.name;
+  
+  if (!hasMeals) {
+    return (
+      <Animated.View entering={FadeIn} style={styles.emptyState}>
+        <Sparkles color={colors.textMute} size={24} />
+        <Text style={styles.emptyText}>No meal plan data available</Text>
+        <Text style={styles.emptyHint}>Try generating a new plan</Text>
+      </Animated.View>
+    );
+  }
+  
   return (
     <View>
-      <View style={styles.totalsRow}>
+      <Animated.View entering={FadeInDown.springify()} style={styles.totalsRow}>
         <View style={styles.totalCell}>
-          <Text style={styles.totalVal}>{plan.total_calories}</Text>
+          <Text style={styles.totalVal}>{Math.round(totalCalories)}</Text>
           <Text style={styles.totalLabel}>kcal total</Text>
         </View>
         <View style={styles.totalCell}>
-          <Text style={styles.totalVal}>{plan.total_protein}g</Text>
+          <Text style={styles.totalVal}>{Math.round(totalProtein)}g</Text>
           <Text style={styles.totalLabel}>protein</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <MealBlock kind="breakfast" meal={plan.breakfast} />
-      <MealBlock kind="lunch" meal={plan.lunch} />
-      <MealBlock kind="dinner" meal={plan.dinner} />
-      <MealBlock kind="snack" meal={plan.snack} />
+      <MealBlock kind="breakfast" meal={plan.breakfast} index={0} />
+      <MealBlock kind="lunch" meal={plan.lunch} index={1} />
+      <MealBlock kind="dinner" meal={plan.dinner} index={2} />
+      <MealBlock kind="snack" meal={plan.snack} index={3} />
 
-      {plan.tip ? (
-        <View style={styles.tipCard}>
+      {tip ? (
+        <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.tipCard}>
           <Sparkles color={colors.brand} size={14} />
-          <Text style={styles.tipText}>{plan.tip}</Text>
-        </View>
+          <Text style={styles.tipText}>{tip}</Text>
+        </Animated.View>
       ) : null}
 
       {onImprove ? (
-        <Pressable onPress={onImprove} style={styles.improveBtn} testID="meal-plan-improve">
-          <Wand2 color={colors.brand} size={16} />
-          <Text style={styles.improveText}>Ask the nutritionist to improve this plan</Text>
-        </Pressable>
+        <Animated.View entering={FadeInDown.delay(500).springify()}>
+          <Pressable onPress={onImprove} style={styles.improveBtn} testID="meal-plan-improve">
+            <Wand2 color={colors.brand} size={16} />
+            <Text style={styles.improveText}>Ask the nutritionist to improve</Text>
+          </Pressable>
+        </Animated.View>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  emptyState: { alignItems: "center", padding: 24, gap: 8 },
+  emptyText: { fontFamily: fonts.bodySemi, color: colors.textMute, fontSize: 14 },
+  emptyHint: { fontFamily: fonts.body, color: colors.textDim, fontSize: 12 },
   totalsRow: { flexDirection: "row", gap: 12, marginBottom: 14 },
   totalCell: { flex: 1, backgroundColor: colors.brand, borderRadius: 18, padding: 14, alignItems: "center" },
   totalVal: { fontFamily: fonts.headingExt, fontSize: 22, color: "#fff", letterSpacing: -0.6 },
