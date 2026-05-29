@@ -1,29 +1,20 @@
 import React from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, Activity, Heart, Footprints, Moon, Smartphone, Mail } from "lucide-react-native";
+import { X, Activity, Heart, Footprints, Moon, Smartphone, Mail, Clock } from "lucide-react-native";
 import { Card } from "@/src/components/Card";
-import { Button } from "@/src/components/Button";
 import { colors, fonts } from "@/src/lib/theme";
 
 const SOURCES = [
-  { id: "apple", name: "Apple Health", desc: "Sync steps, weight, sleep, workouts", Icon: Heart, color: "#FF3B5C" },
-  { id: "google", name: "Google Fit", desc: "Sync steps, weight, sleep, workouts", Icon: Activity, color: "#4A90E2" },
-  { id: "fitbit", name: "Fitbit", desc: "Sync steps, sleep, heart rate", Icon: Footprints, color: "#00B0B9" },
-  { id: "garmin", name: "Garmin", desc: "Workouts, steps, sleep", Icon: Moon, color: "#007ACC" },
+  { id: "apple", name: "Apple Health", desc: "Sync steps, weight, sleep, workouts", Icon: Heart, color: "#FF3B5C", comingSoon: true },
+  { id: "google", name: "Google Fit", desc: "Sync steps, weight, sleep, workouts", Icon: Activity, color: "#4A90E2", comingSoon: true },
+  { id: "fitbit", name: "Fitbit", desc: "Sync steps, sleep, heart rate", Icon: Footprints, color: "#00B0B9", comingSoon: true },
+  { id: "garmin", name: "Garmin", desc: "Workouts, steps, sleep", Icon: Moon, color: "#007ACC", comingSoon: true },
 ];
 
 export default function HealthSync() {
   const router = useRouter();
-
-  const connect = (name: string) => {
-    Alert.alert(
-      `${name} sync requires a build`,
-      "Health integrations use native modules. We've wired this up for you — once you publish a build via Emergent (top-right), you'll be able to grant permission and Leanly will auto-sync steps, weight, sleep, and workouts.",
-      [{ text: "Got it" }],
-    );
-  };
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -48,7 +39,7 @@ export default function HealthSync() {
         {SOURCES.map((s) => {
           const { Icon } = s;
           return (
-            <Pressable key={s.id} onPress={() => connect(s.name)} testID={`sync-${s.id}`}>
+            <View key={s.id} testID={`sync-${s.id}`}>
               <Card style={styles.row}>
                 <View style={[styles.icon, { backgroundColor: s.color + "20" }]}>
                   <Icon color={s.color} size={20} />
@@ -57,9 +48,16 @@ export default function HealthSync() {
                   <Text style={styles.rowTitle}>{s.name}</Text>
                   <Text style={styles.rowSub}>{s.desc}</Text>
                 </View>
-                <Text style={styles.connect}>Connect</Text>
+                {s.comingSoon ? (
+                  <View style={styles.comingSoonBadge}>
+                    <Clock size={10} color={colors.warning} />
+                    <Text style={styles.comingSoonText}>Coming Soon</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.connect}>Connect</Text>
+                )}
               </Card>
-            </Pressable>
+            </View>
           );
         })}
 
@@ -80,11 +78,10 @@ export default function HealthSync() {
         <View style={{ marginTop: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
             <Smartphone size={14} color={colors.textMute} />
-            <Text style={styles.label}>Native build required</Text>
+            <Text style={styles.label}>Native integrations in progress</Text>
           </View>
           <Text style={styles.helper}>
-            Apple Health & Google Fit run on the device. Once you publish a build, these toggles will request
-            permission and start syncing in the background.
+            Apple Health & Google Fit integrations are coming soon. We're working on native device sync — stay tuned!
           </Text>
         </View>
       </ScrollView>
@@ -106,4 +103,20 @@ const styles = StyleSheet.create({
   rowSub: { fontFamily: fonts.body, fontSize: 12, color: colors.textMute, marginTop: 2 },
   connect: { fontFamily: fonts.bodySemi, color: colors.brand, fontSize: 13 },
   helper: { fontFamily: fonts.body, color: colors.textMute, fontSize: 12, lineHeight: 18 },
+  comingSoonBadge: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: 4, 
+    backgroundColor: colors.warning + "20", 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 999 
+  },
+  comingSoonText: { 
+    fontFamily: fonts.bodyMed, 
+    color: colors.warning, 
+    fontSize: 10, 
+    textTransform: "uppercase", 
+    letterSpacing: 0.5 
+  },
 });

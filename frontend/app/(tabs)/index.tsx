@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Sparkles, Plus, TrendingDown } from "lucide-react-native";
+import { Camera, Sparkles, Plus, TrendingDown, Flame } from "lucide-react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/lib/supabase";
@@ -15,6 +16,7 @@ import { HealthScoreModal } from "@/src/components/HealthScoreModal";
 import { BMICard } from "@/src/components/BMICard";
 import { MarkdownText } from "@/src/components/MarkdownText";
 import { WeightChart, Point } from "@/src/components/WeightChart";
+import { DailyMotivationModal } from "@/src/components/DailyMotivation";
 import { colors, fonts } from "@/src/lib/theme";
 
 function startOfTodayISO() {
