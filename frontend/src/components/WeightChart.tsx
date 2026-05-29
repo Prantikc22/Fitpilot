@@ -19,9 +19,11 @@ export function WeightChart({ points, height = 160, goal }: { points: Point[]; h
       min = Math.min(min, goal);
       max = Math.max(max, goal);
     }
-    if (max - min < 2) {
-      min -= 1;
-      max += 1;
+  if (max - min < 1.5) {
+      // ensure a visible slope even if weight history is flat — center the value in the band
+      const mid = (max + min) / 2;
+      min = mid - 1.5;
+      max = mid + 1.5;
     }
     const xStep = (w - padX * 2) / Math.max(1, points.length - 1);
     const yScale = (v: number) => padY + (height - padY * 2) * (1 - (v - min) / (max - min));

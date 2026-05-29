@@ -31,6 +31,8 @@ export default function Home() {
   const [todayPro, setTodayPro] = useState(0);
   const [weights, setWeights] = useState<Point[]>([]);
   const [habit, setHabit] = useState<{ water_ml: number; steps: number; exercise_done: boolean } | null>(null);
+  const [todayCarbs, setTodayCarbs] = useState(0);
+  const [todayFat, setTodayFat] = useState(0);
   const [aiSummary, setAiSummary] = useState<string>("");
   const [score, setScore] = useState<number>(0);
   const [scoreBreakdown, setScoreBreakdown] = useState<Record<string, number> | null>(null);
@@ -79,6 +81,16 @@ export default function Home() {
       setScore(s.score);
       setScoreBreakdown(s.breakdown as any);
     } catch {}
+
+    // Generate today's coach note using the freshly-computed numbers
+    try {
+      const r = await api.coachMessage({
+        profile,
+        today_calories: cals,
+        today_protein: pro,
+      });
+      setAiSummary(r.reply);
+    } catch {}
   }, [session?.user?.id, profile?.daily_calorie_target, profile?.daily_protein_target]);
 
   useFocusEffect(
@@ -88,20 +100,26 @@ export default function Home() {
   );
 
   useEffect(() => {
-    // Lazy AI summary once per mount
-    (async () => {
-      if (!profile) return;
-      try {
-        const r = await api.coachMessage({
-          profile,
-          today_calories: todayCals,
-          today_protein: todayPro,
-        });
-        setAiSummary(r.reply);
-      } catch {}
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // no-op kept for future hooks
   }, [profile?.id]);
+
+  const bumpWater = useCallback(
+    async (delta: number) => {
+      if (!session?.user) return;
+      const todayDate = new Date().toISOString().slice(0, 10);
+      const current = habit?.water_ml || 0;
+      const next = { ...(habit || { steps: 0, exercise_done: false }), water_ml: Math.max(0, current + delta) };
+      setHabit(next as any);
+      await supabase.from("habits").upsert({
+        user_id: session.user.id,
+        date: todayDate,
+        water_ml: next.water_ml,
+        steps: (habit as any)?.steps || 0,
+        exercise_done: !!(habit as any)?.exercise_done,
+      });
+    },
+    [session?.user?.id, habit],
+  );
 
   if (!profile) {
     return (
@@ -169,7 +187,7 @@ export default function Home() {
               <Sparkles color="#fff" size={16} />
               <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Today's Coach Note</Text>
             </View>
-            <MarkdownText dark>{aiSummary}</MarkdownText>
+            <Text style={styles.aiText}>{aiSummary}</Text>
           </Card>
         ) : null}
 
@@ -218,7 +236,56 @@ export default function Home() {
             color={colors.terracotta}
             testID="row-protein"
           />
+          <MetricRow
+            label="Carbs"
+            value={todayCarbs}
+            total={Math.round((profile.daily_calorie_target || 2000) * 0.45 / 4)}
+            unit="g"
+            color={colors.warning}
+            testID="row-carbs"
+          />
+          <MetricRow
+            label="Fat"
+            value={todayFat}
+            total={Math.round((profile.daily_calorie_target || 2000) * 0.28 / 9)}
+            unit="g"
+            color={colors.info}
+            testID="row-fat"
+          />
         </Card>
+
+        <Card style={{ marginTop: 16 }} testID="water-card">
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View>
+              <Text style={styles.cardLabel}>Hydration</Text>
+              <Text style={styles.cardTitle}>{habit?.water_ml || 0} ml today</Text>
+              <Text style={styles.cardSub}>Goal: 2,500 ml</Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <Pressable style={styles.waterBtn} onPress={() => bumpWater(250)} testID="water-add-250">
+                <Text style={styles.waterBtnText}>+250</Text>
+              </Pressable>
+              <Pressable style={styles.waterBtn} onPress={() => bumpWater(500)} testID="water-add-500">
+                <Text style={styles.waterBtnText}>+500</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Card>
+
+        <View style={styles.shortcutRow}>
+          <Pressable style={styles.shortcut} onPress={() => router.push("/dietitian")} testID="home-dietitian">
+            <Text style={styles.shortcutIcon}>👩‍⚕️</Text>
+            <Text style={styles.shortcutText}>Talk to a Dietitian</Text>
+          </Pressable>
+          <Pressable style={styles.shortcut} onPress={() => router.push("/health-sync")} testID="home-health">
+            <Text style={styles.shortcutIcon}>❤️</Text>
+            <Text style={styles.shortcutText}>Connect Health</Text>
+          </Pressable>
+          <Pressable style={styles.shortcut} onPress={() => router.push("/yoga")} testID="home-yoga">
+            <Text style={styles.shortcutIcon}>🧘</Text>
+            <Text style={styles.shortcutText}>Yoga (Pro)</Text>
+          </Pressable>
+        </View>
 
         <Card style={{ marginTop: 16 }} testID="weight-trend-card">
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -236,14 +303,19 @@ export default function Home() {
         <View style={styles.grid}>
           <View style={styles.gridCol}>
             <MetricCard
-              testID="metric-water"
-              label="Water"
-              value={(habit?.water_ml || 0).toString()}
-              unit="ml"
+              testID="metric-steps"
+              label="Steps"
+              value={(habit?.steps || 0).toLocaleString()}
+              hint="Connect Health to auto-sync"
             />
           </View>
           <View style={styles.gridCol}>
-            <MetricCard testID="metric-steps" label="Steps" value={(habit?.steps || 0).toLocaleString()} />
+            <MetricCard
+              testID="metric-water-summary"
+              label="Water"
+              value={`${((habit?.water_ml || 0) / 1000).toFixed(1)} L`}
+              hint={`${Math.max(0, 2500 - (habit?.water_ml || 0))} ml to goal`}
+            />
           </View>
         </View>
 
@@ -291,6 +363,28 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 12,
     paddingHorizontal: 20,
+    flexDirection: "row",
+    gap: 10,
+  },
+  fab: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  fabPrimary: { backgroundColor: colors.brand },
+  fabSecondary: { backgroundColor: colors.brandLight },
+  fabText: { color: "#fff", fontFamily: fonts.bodySemi, fontSize: 15 },
+});
+  paddingHorizontal: 20,
     flexDirection: "row",
     gap: 10,
   },
