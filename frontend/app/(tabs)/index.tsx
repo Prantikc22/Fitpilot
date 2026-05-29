@@ -1,0 +1,292 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter, useFocusEffect } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Camera, Sparkles, Plus, TrendingDown } from "lucide-react-native";
+
+import { useAuth } from "@/src/contexts/AuthContext";
+import { supabase } from "@/src/lib/supabase";
+import { api } from "@/src/lib/api";
+import { Card } from "@/src/components/Card";
+import { MetricCard } from "@/src/components/MetricCard";
+import { MetricRow } from "@/src/components/MetricRow";
+import { HealthScoreGauge } from "@/src/components/HealthScoreGauge";
+import { WeightChart, Point } from "@/src/components/WeightChart";
+import { colors, fonts } from "@/src/lib/theme";
+
+function startOfTodayISO() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+export default function Home() {
+  const router = useRouter();
+  const { profile, session } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+  const [todayCals, setTodayCals] = useState(0);
+  const [todayPro, setTodayPro] = useState(0);
+  const [weights, setWeights] = useState<Point[]>([]);
+  const [habit, setHabit] = useState<{ water_ml: number; steps: number; exercise_done: boolean } | null>(null);
+  const [aiSummary, setAiSummary] = useState<string>("");
+  const [score, setScore] = useState<number>(0);
+
+  const load = useCallback(async () => {
+    if (!session?.user || !profile) return;
+    const userId = session.user.id;
+    const todayISO = startOfTodayISO();
+    const todayDate = new Date().toISOString().slice(0, 10);
+
+    const [{ data: foods }, { data: wl }, { data: h }] = await Promise.all([
+      supabase.from("food_logs").select("calories,protein").eq("user_id", userId).gte("logged_at", todayISO),
+      supabase
+        .from("weight_logs")
+        .select("weight_kg,logged_at")
+        .eq("user_id", userId)
+        .order("logged_at", { ascending: true })
+        .limit(60),
+      supabase.from("habits").select("*").eq("user_id", userId).eq("date", todayDate).maybeSingle(),
+    ]);
+
+    const cals = (foods || []).reduce((s, f: any) => s + (Number(f.calories) || 0), 0);
+    const pro = (foods || []).reduce((s, f: any) => s + (Number(f.protein) || 0), 0);
+    setTodayCals(cals);
+    setTodayPro(pro);
+    setHabit(h ? { water_ml: h.water_ml || 0, steps: h.steps || 0, exercise_done: !!h.exercise_done } : null);
+    setWeights(
+      (wl || []).map((w: any) => ({ date: w.logged_at, weight: Number(w.weight_kg) })),
+    );
+
+    // Health score
+    try {
+      const trend =
+        wl && wl.length >= 2 ? Number(wl[wl.length - 1].weight_kg) - Number(wl[0].weight_kg) : 0;
+      const s = await api.healthScore({
+        calorie_target: profile.daily_calorie_target || 2000,
+        calories_today: cals,
+        protein_target: profile.daily_protein_target || 100,
+        protein_today: pro,
+        water_ml: h?.water_ml || 0,
+        steps: h?.steps || 0,
+        exercise_done: !!h?.exercise_done,
+        weight_trend_kg_week: trend,
+      });
+      setScore(s.score);
+    } catch {}
+  }, [session?.user?.id, profile?.daily_calorie_target, profile?.daily_protein_target]);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  useEffect(() => {
+    // Lazy AI summary once per mount
+    (async () => {
+      if (!profile) return;
+      try {
+        const r = await api.coachMessage({
+          profile,
+          today_calories: todayCals,
+          today_protein: todayPro,
+        });
+        setAiSummary(r.reply);
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
+
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Text style={styles.title}>Loading…</Text>
+      </SafeAreaView>
+    );
+  }
+
+  const remaining = (profile.current_weight_kg || 0) - (profile.goal_weight_kg || 0);
+  const latestWeight = weights.length ? weights[weights.length - 1].weight : profile.current_weight_kg || 0;
+
+  // Estimate projected date
+  const projected = (() => {
+    const aggr = profile.aggressiveness || "balanced";
+    const per = aggr === "aggressive" ? 0.8 : aggr === "fast" ? 0.6 : 0.4;
+    const left = latestWeight - (profile.goal_weight_kg || latestWeight);
+    if (left <= 0 || per <= 0) return null;
+    const weeks = left / per;
+    const days = Math.round(weeks * 7);
+    const dt = new Date();
+    dt.setDate(dt.getDate() + days);
+    return { days, dateStr: dt.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) };
+  })();
+
+  return (
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await load();
+              setRefreshing(false);
+            }}
+            tintColor={colors.brand}
+          />
+        }
+      >
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.hello}>Hi {profile.name || "there"}</Text>
+            <Text style={styles.headline}>Let's stay on track today.</Text>
+          </View>
+        </View>
+
+        <Card style={{ flexDirection: "row", alignItems: "center", gap: 16 }} testID="health-score-card">
+          <HealthScoreGauge value={score} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cardLabel}>Today</Text>
+            <Text style={styles.cardTitle}>Health Score</Text>
+            <Text style={styles.cardSub}>
+              Based on your calories, protein, water, steps, and weight trend.
+            </Text>
+          </View>
+        </Card>
+
+        {aiSummary ? (
+          <Card variant="dark" testID="ai-summary-card" style={{ marginTop: 16 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <Sparkles color="#fff" size={16} />
+              <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Daily Coach</Text>
+            </View>
+            <Text style={styles.aiText}>{aiSummary}</Text>
+          </Card>
+        ) : null}
+
+        <View style={styles.grid}>
+          <View style={styles.gridCol}>
+            <MetricCard
+              testID="metric-current-weight"
+              label="Current"
+              value={(latestWeight || 0).toFixed(1)}
+              unit="kg"
+              hint={`Goal ${(profile.goal_weight_kg || 0).toFixed(1)} kg`}
+            />
+          </View>
+          <View style={styles.gridCol}>
+            <MetricCard
+              testID="metric-remaining"
+              label="To go"
+              value={Math.max(0, remaining).toFixed(1)}
+              unit="kg"
+              hint={projected ? `in ${projected.days} days` : "set a goal"}
+            />
+          </View>
+        </View>
+
+        <Card style={{ marginTop: 16 }} testID="macros-card">
+          <Text style={styles.cardTitle}>Today's intake</Text>
+          <MetricRow
+            label="Calories"
+            value={todayCals}
+            total={profile.daily_calorie_target || 2000}
+            unit="kcal"
+            testID="row-calories"
+          />
+          <MetricRow
+            label="Protein"
+            value={todayPro}
+            total={profile.daily_protein_target || 100}
+            unit="g"
+            color={colors.terracotta}
+            testID="row-protein"
+          />
+        </Card>
+
+        <Card style={{ marginTop: 16 }} testID="weight-trend-card">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <TrendingDown color={colors.brand} size={18} />
+            <Text style={styles.cardTitle}>Weight trend</Text>
+          </View>
+          <WeightChart points={weights} goal={profile.goal_weight_kg} />
+          {projected && (
+            <Text style={styles.proj}>
+              Projected to reach {profile.goal_weight_kg} kg by {projected.dateStr}
+            </Text>
+          )}
+        </Card>
+
+        <View style={styles.grid}>
+          <View style={styles.gridCol}>
+            <MetricCard
+              testID="metric-water"
+              label="Water"
+              value={(habit?.water_ml || 0).toString()}
+              unit="ml"
+            />
+          </View>
+          <View style={styles.gridCol}>
+            <MetricCard testID="metric-steps" label="Steps" value={(habit?.steps || 0).toLocaleString()} />
+          </View>
+        </View>
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
+
+      <View style={styles.fabRow}>
+        <Pressable style={[styles.fab, styles.fabPrimary]} onPress={() => router.push("/scan")} testID="fab-scan">
+          <Camera color="#fff" size={20} />
+          <Text style={styles.fabText}>Scan food</Text>
+        </Pressable>
+        <Pressable style={[styles.fab, styles.fabSecondary]} onPress={() => router.push("/(tabs)/log")} testID="fab-log">
+          <Plus color={colors.brand} size={20} />
+          <Text style={[styles.fabText, { color: colors.brand }]}>Log</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
+  scroll: { padding: 20, gap: 0 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
+  hello: { fontFamily: fonts.bodyMed, fontSize: 14, color: colors.textMute },
+  headline: { fontFamily: fonts.headingExt, fontSize: 26, color: colors.text, letterSpacing: -0.8, marginTop: 4 },
+  title: { fontFamily: fonts.headingExt, fontSize: 22, padding: 20 },
+  cardLabel: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textTransform: "uppercase", letterSpacing: 0.7 },
+  cardTitle: { fontFamily: fonts.heading, fontSize: 18, color: colors.text, marginTop: 2 },
+  cardSub: { fontFamily: fonts.body, fontSize: 13, color: colors.textMute, marginTop: 4, lineHeight: 18 },
+  aiText: { fontFamily: fonts.body, color: "#fff", fontSize: 15, lineHeight: 22 },
+  grid: { flexDirection: "row", gap: 12, marginTop: 16 },
+  gridCol: { flex: 1 },
+  proj: { fontFamily: fonts.bodyMed, color: colors.brand, fontSize: 13, marginTop: 12 },
+  fabRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 12,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    gap: 10,
+  },
+  fab: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  fabPrimary: { backgroundColor: colors.brand },
+  fabSecondary: { backgroundColor: colors.brandLight },
+  fabText: { color: "#fff", fontFamily: fonts.bodySemi, fontSize: 15 },
+});

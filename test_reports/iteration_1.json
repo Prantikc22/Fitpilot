@@ -1,0 +1,47 @@
+{
+  "summary": "Backend testing complete for Leanly. All 14 pytest cases passed (100%) across 9 review-request scenarios: health check, targets compute (Mifflin-St Jeor), health-score compute, AI coach message (OpenRouter), meal-plan generate (OpenRouter json_mode), weekly-report (OpenRouter json_mode), food/analyze (OpenAI Vision GPT-4o-mini), Supabase schema verification (7 expected tables present, RLS enabled, profiles columns), and OpenRouter fallback (observed 429 on google/gemma-4-26b-a4b-it:free followed by graceful 200 on next model). Tests hit the public EXPO_PUBLIC_BACKEND_URL ingress, so they validate the same path used by the mobile app. No issues found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/health-score/compute", "issue": "When calorie_target=0 and protein_target=0, the calorie adherence helper returns the default 0.5 → 15 points (plus 2 for weight_trend==0), giving score≈17 even for an empty/unconfigured user. Consider returning 0 when targets are not set so the UI gauge starts at zero before onboarding completes."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_health_and_targets.py",
+    "/app/backend/tests/test_health_score.py",
+    "/app/backend/tests/test_ai_endpoints.py",
+    "/app/backend/tests/test_supabase_schema.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional: in /api/health-score/compute, treat missing calorie_target as 0 score instead of the 0.5 default to avoid an inflated score for un-onboarded users.",
+    "Optional: free-tier OpenRouter models 429 frequently; the fallback works but adds ~1s latency. Consider caching the last successful model index per process or using a paid OpenRouter key for production traffic."
+  ],
+  "critical_code_review_comments": [
+    "server.py: /api/food/analyze raises HTTPException(422) with message containing prose — fine but Pydantic response_model=FoodAnalyzeRes will swallow extra fields. Acceptable.",
+    "server.py: @app.on_event('startup') is deprecated in FastAPI 0.110+ in favor of lifespan handlers, but still functional.",
+    "server.py: All endpoints async, no MongoDB usage (despite MONGO_URL in .env). OK for a thin AI proxy.",
+    "server.py: No auth on AI endpoints — anyone with the public URL can burn OpenAI/OpenRouter quota. Consider verifying the Supabase JWT in a dependency before forwarding to AI providers."
+  ],
+  "updated_files": [
+    "/app/backend/tests/__init__.py (new, empty)",
+    "/app/backend/tests/conftest.py (new)",
+    "/app/backend/tests/test_health_and_targets.py (new)",
+    "/app/backend/tests/test_health_score.py (new)",
+    "/app/backend/tests/test_ai_endpoints.py (new)",
+    "/app/backend/tests/test_supabase_schema.py (new)"
+  ],
+  "success_rate": {"backend": "100% (14/14)", "frontend": "not tested (frontend testing skipped per request)"},
+  "seed_data_creation": "None. Tests use a public Unsplash food image (downloaded on the fly) for the vision test. No DB writes.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reusable pytest suite at /app/backend/tests/. conftest.py loads BASE_URL from frontend/.env EXPO_PUBLIC_BACKEND_URL (the public ingress). Supabase pooler creds live in test_supabase_schema.py (host aws-1-ap-northeast-1.pooler.supabase.com, user postgres.ghglnlyopnemxxnlomvj). To re-run: `cd /app/backend && python -m pytest tests/ -v --tb=short --junitxml=/app/test_reports/pytest/pytest_results.xml`. AI tests take ~50s due to OpenRouter 429+fallback.",
+  "rca_of_issue": "No bugs requiring RCA. All endpoints behave per spec. OpenRouter fallback chain confirmed working in /var/log/supervisor/backend.err.log: 'OpenRouter google/gemma-4-26b-a4b-it:free -> 429, falling back' followed by 200 on the next model."
+}

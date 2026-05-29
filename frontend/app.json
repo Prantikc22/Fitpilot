@@ -1,26 +1,33 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Leanly",
+    "slug": "leanly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "scheme": "leanly",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.leanly.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Scan meals to track calories automatically",
+        "NSPhotoLibraryUsageDescription": "Upload meal photos for AI analysis"
+      }
     },
     "android": {
+      "package": "com.leanly.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000"
+        "backgroundColor": "#2B4C3B"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "READ_MEDIA_IMAGES"]
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -31,10 +38,23 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "backgroundColor": "#FAFAFA"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Scan meals to track calories automatically"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Upload meal photos for AI analysis",
+          "cameraPermission": "Scan meals to track calories automatically"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

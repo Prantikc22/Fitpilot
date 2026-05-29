@@ -1,0 +1,161 @@
+import React, { useEffect, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ChevronRight, Crown, LogOut, Shield, Sparkles, User as UserIcon } from "lucide-react-native";
+
+import { useAuth } from "@/src/contexts/AuthContext";
+import { Card } from "@/src/components/Card";
+import { colors, fonts } from "@/src/lib/theme";
+import { initRevenueCat, isProUser, presentCustomerCenter, rcAvailable } from "@/src/lib/revenuecat";
+
+export default function Profile() {
+  const router = useRouter();
+  const { profile, session, signOut } = useAuth();
+  const [pro, setPro] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      if (session?.user?.id) await initRevenueCat(session.user.id);
+      setPro(await isProUser());
+    })();
+  }, [session?.user?.id]);
+
+  if (!profile) return null;
+
+  const isAdmin = profile.role === "admin";
+
+  return (
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={styles.h1}>Profile</Text>
+
+        <Card style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <View style={styles.avatar}>
+            <UserIcon color={colors.brand} size={22} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.name}>{profile.name || "You"}</Text>
+            <Text style={styles.email}>{profile.email}</Text>
+          </View>
+          {(pro || profile.subscription_tier !== "free") && (
+            <View style={styles.proBadge}>
+              <Crown color={colors.warning} size={12} />
+              <Text style={styles.proBadgeText}>Pro</Text>
+            </View>
+          )}
+        </Card>
+
+        <Card variant="highlight" style={{ marginTop: 16 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Sparkles color={colors.brand} size={14} />
+            <Text style={styles.label}>Your plan</Text>
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
+            <Stat label="Calories" value={`${profile.daily_calorie_target || 0}`} />
+            <Stat label="Protein" value={`${profile.daily_protein_target || 0}g`} />
+            <Stat label="Goal" value={`${profile.goal_weight_kg || 0}kg`} />
+          </View>
+        </Card>
+
+        <Section title="Subscription">
+          <Row
+            label={pro ? "Manage subscription" : "Upgrade to Leanly Pro"}
+            sub={pro ? "Manage or cancel anytime" : "Unlimited scans, AI coach, weekly reports"}
+            onPress={() => (pro ? presentCustomerCenter() : router.push("/paywall"))}
+            testID="profile-subscription"
+          />
+        </Section>
+
+        {isAdmin && (
+          <Section title="Admin">
+            <Row label="Admin Dashboard" sub="Users, metrics, AI usage" onPress={() => router.push("/admin")} testID="profile-admin" icon={<Shield size={18} color={colors.brand} />} />
+          </Section>
+        )}
+
+        <Section title="Account">
+          <Row label="Restart onboarding" sub="Update your goals & preferences" onPress={() => router.push("/onboarding")} testID="profile-reonboard" />
+          <Row label="Sign out" onPress={() => signOut()} testID="profile-signout" icon={<LogOut size={18} color={colors.error} />} danger />
+        </Section>
+
+        {!rcAvailable && (
+          <Text style={styles.devNote}>
+            Note: In-app purchases are available in development & production builds (not Expo Go).
+          </Text>
+        )}
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <View>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+    </View>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={{ marginTop: 20 }}>
+      <Text style={styles.section}>{title}</Text>
+      <Card style={{ padding: 0, overflow: "hidden" }}>{children}</Card>
+    </View>
+  );
+}
+
+function Row({
+  label,
+  sub,
+  onPress,
+  testID,
+  icon,
+  danger,
+}: {
+  label: string;
+  sub?: string;
+  onPress?: () => void;
+  testID?: string;
+  icon?: React.ReactNode;
+  danger?: boolean;
+}) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]} testID={testID}>
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.rowLabel, danger && { color: colors.error }]}>{label}</Text>
+        {sub ? <Text style={styles.rowSub}>{sub}</Text> : null}
+      </View>
+      {icon ? icon : <ChevronRight size={18} color={colors.textDim} />}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.bg },
+  scroll: { padding: 20 },
+  h1: { fontFamily: fonts.headingExt, fontSize: 28, color: colors.text, letterSpacing: -0.8 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.brandLight, alignItems: "center", justifyContent: "center" },
+  name: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.text },
+  email: { fontFamily: fonts.body, fontSize: 13, color: colors.textMute, marginTop: 2 },
+  proBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.sand, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  proBadgeText: { fontFamily: fonts.bodySemi, fontSize: 11, color: "#7A4A1F", textTransform: "uppercase", letterSpacing: 0.5 },
+  label: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textTransform: "uppercase", letterSpacing: 0.7 },
+  statLabel: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textTransform: "uppercase" },
+  statValue: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.text, marginTop: 4 },
+  section: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8, marginLeft: 4 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    gap: 12,
+    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  rowLabel: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
+  rowSub: { fontFamily: fonts.body, fontSize: 13, color: colors.textMute, marginTop: 2 },
+  devNote: { marginTop: 20, padding: 14, backgroundColor: colors.bgWarm, borderRadius: 14, fontSize: 12, fontFamily: fonts.body, color: colors.textMute },
+});
