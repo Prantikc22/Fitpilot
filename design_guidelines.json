@@ -1,0 +1,243 @@
+{
+  "project_name": "Leanly",
+  "app_type": "mobile_app",
+  "theme": "LIGHT",
+  "archetype": "Organic & Earthy",
+  "design_philosophy": "Premium, minimal, and scientific but approachable. Emphasizes warm, organic aesthetics to build trust and promote sustainable weight loss, avoiding the cold clinical feel of traditional medical apps or the aggressive dark-mode vibe of intense gym apps. Inspired by top-tier consumer health apps like Cal AI and Noom.",
+  "colors": {
+    "background": {
+      "primary": "#FAFAFA",
+      "secondary": "#FFFFFF",
+      "tertiary": "#F2F0ED"
+    },
+    "text": {
+      "primary": "#1A1A1A",
+      "secondary": "#595959",
+      "disabled": "#A6A6A6",
+      "inverse": "#FFFFFF"
+    },
+    "brand": {
+      "primary": "#2B4C3B",
+      "primary_light": "#E9EFEA",
+      "secondary": "#859C8A",
+      "accent_terracotta": "#C0604A",
+      "accent_sand": "#E6DCCC"
+    },
+    "status": {
+      "success": "#3A7D44",
+      "warning": "#E5A93B",
+      "error": "#D14949",
+      "info": "#4A708B"
+    },
+    "borders": {
+      "default": "#EBEBEB",
+      "focus": "#2B4C3B"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "Manrope",
+      "body": "Work Sans",
+      "monospace": "Space Mono"
+    },
+    "sizes": {
+      "h1": {
+        "fontSize": 36,
+        "lineHeight": 44,
+        "letterSpacing": -1
+      },
+      "h2": {
+        "fontSize": 28,
+        "lineHeight": 36,
+        "letterSpacing": -0.5
+      },
+      "h3": {
+        "fontSize": 24,
+        "lineHeight": 32,
+        "letterSpacing": -0.25
+      },
+      "h4": {
+        "fontSize": 20,
+        "lineHeight": 28,
+        "letterSpacing": 0
+      },
+      "body_large": {
+        "fontSize": 18,
+        "lineHeight": 26,
+        "letterSpacing": 0
+      },
+      "body_base": {
+        "fontSize": 16,
+        "lineHeight": 24,
+        "letterSpacing": 0
+      },
+      "body_small": {
+        "fontSize": 14,
+        "lineHeight": 20,
+        "letterSpacing": 0
+      },
+      "label": {
+        "fontSize": 12,
+        "lineHeight": 16,
+        "letterSpacing": 0.5,
+        "textTransform": "uppercase"
+      }
+    },
+    "rules": [
+      "Use Manrope for all headings with tight tracking for a modern, premium feel.",
+      "Use Work Sans for readability in body copy.",
+      "Avoid 'Inter' and 'Space Grotesk' as requested in the anti-patterns.",
+      "Numbers in health score and dashboard should use tabular-nums if possible, or fall back to monospace for precise alignment."
+    ]
+  },
+  "spacing": {
+    "scale": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32,
+      "2xl": 48,
+      "3xl": 64
+    },
+    "rules": [
+      "Mobile-first spacing: Generous padding around edges (minimum 16px, prefer 24px for premium feel).",
+      "Section gaps should be 32px or 48px to let content breathe."
+    ]
+  },
+  "components": {
+    "buttons": {
+      "primary": {
+        "backgroundColor": "#2B4C3B",
+        "color": "#FFFFFF",
+        "borderRadius": 9999,
+        "paddingVertical": 16,
+        "paddingHorizontal": 32,
+        "alignItems": "center",
+        "justifyContent": "center",
+        "minHeight": 56
+      },
+      "secondary": {
+        "backgroundColor": "#E9EFEA",
+        "color": "#2B4C3B",
+        "borderRadius": 9999,
+        "paddingVertical": 16,
+        "paddingHorizontal": 32,
+        "alignItems": "center",
+        "justifyContent": "center",
+        "minHeight": 56
+      },
+      "outline": {
+        "backgroundColor": "transparent",
+        "borderColor": "#EBEBEB",
+        "borderWidth": 1,
+        "color": "#1A1A1A",
+        "borderRadius": 9999,
+        "paddingVertical": 16,
+        "paddingHorizontal": 32,
+        "minHeight": 56
+      }
+    },
+    "cards": {
+      "default": {
+        "backgroundColor": "#FFFFFF",
+        "borderRadius": 24,
+        "padding": 24,
+        "borderColor": "#EBEBEB",
+        "borderWidth": 1,
+        "shadowColor": "#000000",
+        "shadowOffset": { "width": 0, "height": 2 },
+        "shadowOpacity": 0.03,
+        "shadowRadius": 8,
+        "elevation": 1
+      },
+      "highlight": {
+        "backgroundColor": "#E9EFEA",
+        "borderRadius": 24,
+        "padding": 24,
+        "borderWidth": 0
+      }
+    },
+    "inputs": {
+      "default": {
+        "backgroundColor": "#F2F0ED",
+        "borderRadius": 16,
+        "padding": 16,
+        "color": "#1A1A1A",
+        "fontSize": 16,
+        "minHeight": 56
+      }
+    },
+    "bottom_tabs": {
+      "backgroundColor": "#FFFFFF",
+      "borderTopColor": "#EBEBEB",
+      "activeTintColor": "#2B4C3B",
+      "inactiveTintColor": "#A6A6A6",
+      "paddingBottom": 8,
+      "paddingTop": 8
+    }
+  },
+  "layout_patterns": {
+    "dashboard_bento": "Use a staggered grid layout for the dashboard. A large Hero card for the Health Score (0-100), adjacent smaller cards for today's calories and water. Utilize Flexbox heavily with wrap capabilities if needed.",
+    "onboarding_flow": "Full-screen cards with large typography. Bottom-anchored 'Next' buttons. Progress bar at the very top (thin, accent color).",
+    "paywall": "Premium feel. Deep forest green background, white text. Large compelling typography. Clear tiered pricing boxes."
+  },
+  "screens": {
+    "Onboarding": {
+      "description": "Multi-step flow collecting user data.",
+      "features": ["Progress bar", "Large, friendly question text", "Selectable pill/chip buttons for options", "Sticky bottom action button"]
+    },
+    "Dashboard": {
+      "description": "Main hub for daily tracking and AI insights.",
+      "features": ["Health Score circular gauge", "Daily AI summary card", "Weight trend line chart (30/60/90 days)", "Macro progress bars (Protein, Calories)"]
+    },
+    "Food_Scanner": {
+      "description": "Camera integration for food analysis via AI vision.",
+      "features": ["Live camera feed view", "Shutter button", "Loading state with AI analyzing animation", "Results bottom sheet modal with nutritional breakdown"]
+    },
+    "Log_Food": {
+      "description": "Timeline view of meals.",
+      "features": ["Grouped sections (Breakfast, Lunch, Dinner, Snacks)", "Add buttons per section", "Daily AI meal plan recommendations"]
+    },
+    "AI_Coach": {
+      "description": "Chat interface with the AI.",
+      "features": ["Chat bubbles", "Daily motivational message pinned at top", "Quick reply suggestions"]
+    },
+    "Paywall": {
+      "description": "Subscription screen (Free/Premium/Pro).",
+      "features": ["Hero image/graphic", "Value proposition list", "3-tier pricing cards", "Clear CTA"]
+    }
+  },
+  "icons": {
+    "library": "lucide-react-native",
+    "style": "Use regular stroke width (2px). Icons should be functional, crisp, and aligned optimally within buttons or tabs."
+  },
+  "media": {
+    "guidelines": "Use high-quality imagery to evoke feelings of health, vitality, and confidence. Images should feel organic, not staged.",
+    "urls": [
+      {
+        "category": "onboarding_hero_1",
+        "description": "Woman jogging down a quiet city street during sunrise, evoking a fresh start.",
+        "url": "https://images.pexels.com/photos/19783892/pexels-photo-19783892.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      },
+      {
+        "category": "onboarding_hero_2",
+        "description": "Two joggers enjoying a sunny day, representing community and consistent habits.",
+        "url": "https://images.pexels.com/photos/27300143/pexels-photo-27300143.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      },
+      {
+        "category": "paywall_hero",
+        "description": "Fit man in a modern gym, exemplifying premium fitness results and confidence.",
+        "url": "https://images.pexels.com/photos/3839049/pexels-photo-3839049.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      },
+      {
+        "category": "paywall_hero_alt",
+        "description": "Smiling man in a gym, healthy lifestyle.",
+        "url": "https://images.pexels.com/photos/6740136/pexels-photo-6740136.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      }
+    ]
+  },
+  "testing_rules": {
+    "data_testid": "CRITICAL: All interactive and key informational elements MUST include a data-testid attribute. Convention: kebab-case, role-based. Examples: data-testid='onboarding-next-button', data-testid='health-score-value', data-testid='food-scan-button'."
+  }
+}
