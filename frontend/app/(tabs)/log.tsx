@@ -17,9 +17,13 @@ import { Plus, Trash2, Sparkles, Camera } from "lucide-react-native";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/lib/supabase";
-import { api } from "@/src/lib/api";
+import { api, MealPlan } from "@/src/lib/api";
 import { Card } from "@/src/components/Card";
 import { Button } from "@/src/components/Button";
+import { MealPlanView } from "@/src/components/MealPlanView";
+import { NutritionistAnimation } from "@/src/components/NutritionistAnimation";
+import { ProLockCard } from "@/src/components/ProLockCard";
+import { checkAndIncrement } from "@/src/lib/limits";
 import { colors, fonts, radius } from "@/src/lib/theme";
 
 const MEALS = ["breakfast", "lunch", "dinner", "snack"] as const;
@@ -44,7 +48,7 @@ export default function LogScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
   const [rows, setRows] = useState<LogRow[]>([]);
-  const [plan, setPlan] = useState<any>(null);
+  const [plan, setPlan] = useState<MealPlan | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [addOpen, setAddOpen] = useState<Meal | null>(null);
   const [name, setName] = useState("");
@@ -70,16 +74,63 @@ export default function LogScreen() {
   );
 
   const generatePlan = async () => {
-    if (!profile) return;
+    if (!profile || !session?.user) return;
+    // Gate: AI meal plan is a Pro feature; allow up to free_ai_gens for taste
+    const limit = await checkAndIncrement(session.user.id, "ai");
+    if (!limit.allowed) {
+      Alert.alert(
+        "Monthly limit reached",
+        "Upgrade to Leanly Pro for plans tailored daily, unlimited.",
+        [
+          { text: "Later", style: "cancel" },
+          { text: "Upgrade", onPress: () => router.push("/paywall") },
+        ],
+      );
+      return;
+    }
     setPlanLoading(true);
+    // Run animation alongside the API call — wait for the longer of the two
+    const animationMin = new Promise((r) => setTimeout(r, 12000));
     try {
-      const p = await api.mealPlan({ profile });
+      const [p] = await Promise.all([api.mealPlan({ profile }), animationMin]);
       setPlan(p);
     } catch (e: any) {
       Alert.alert("Couldn't generate plan", e.message || "Try again later.");
     } finally {
       setPlanLoading(false);
     }
+  };
+
+  const improvePlan = async () => {
+    if (!plan || !profile || !session?.user) return;
+    const limit = await checkAndIncrement(session.user.id, "ai");
+    if (!limit.allowed) {
+      Alert.alert("Monthly limit reached", "Upgrade to Pro for unlimited refinements.", [
+        { text: "Later", style: "cancel" },
+        { text: "Upgrade", onPress: () => router.push("/paywall") },
+      ]);
+      return;
+    }
+    Alert.prompt?.(
+      "Tell the nutritionist",
+      "What should we change? e.g. 'more protein', 'no dairy', 'lighter dinner'.",
+      async (feedback) => {
+        if (!feedback?.trim()) return;
+        setPlanLoading(true);
+        const min = new Promise((r) => setTimeout(r, 8000));
+        try {
+          const [p] = await Promise.all([
+            api.improveMealPlan({ profile, current_plan: plan, feedback }),
+            min,
+          ]);
+          setPlan(p);
+        } catch (e: any) {
+          Alert.alert("Couldn't refine", e.message || "Try again later.");
+        } finally {
+          setPlanLoading(false);
+        }
+      },
+    );
   };
 
   const addItem = async () => {
@@ -131,7 +182,7 @@ export default function LogScreen() {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Sparkles color={colors.brand} size={16} />
-                <Text style={styles.label}>AI Meal Plan</Text>
+                <Text style={styles.label}>Personalized Plan</Text>
               </View>
               <Text style={styles.cardTitle}>
                 {plan ? "Today's plan" : "Get a plan tailored to you"}
@@ -148,21 +199,8 @@ export default function LogScreen() {
             />
           </View>
           {plan ? (
-            <View style={{ marginTop: 12, gap: 10 }}>
-              {(["breakfast", "lunch", "dinner", "snack"] as const).map((k) => {
-                const m = plan[k];
-                if (!m) return null;
-                return (
-                  <View key={k} style={styles.planRow}>
-                    <Text style={styles.planMeal}>{k.toUpperCase()}</Text>
-                    <Text style={styles.planName}>{m.name}</Text>
-                    <Text style={styles.planMacros}>
-                      {m.calories} kcal · {m.protein}g protein
-                    </Text>
-                  </View>
-                );
-              })}
-              {plan.tip ? <Text style={styles.tip}>💡 {plan.tip}</Text> : null}
+            <View style={{ marginTop: 14 }}>
+              <MealPlanView plan={plan} onImprove={improvePlan} />
             </View>
           ) : null}
         </Card>
@@ -237,6 +275,8 @@ export default function LogScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <NutritionistAnimation visible={planLoading} />
     </SafeAreaView>
   );
 }

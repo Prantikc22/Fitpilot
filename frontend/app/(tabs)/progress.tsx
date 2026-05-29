@@ -211,7 +211,8 @@ export default function Progress() {
             onPress={generateReport}
             loading={reportLoading}
             size="md"
-            style={{ marginTop: 12, backgroundColor: "#fff" }}
+            variant="outline"
+            style={{ marginTop: 12, backgroundColor: "#fff", borderColor: "#fff" }}
             testID="weekly-report-btn"
           />
         </Card>

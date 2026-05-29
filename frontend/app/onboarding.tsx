@@ -11,11 +11,13 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Button } from "@/src/components/Button";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/lib/supabase";
 import { api } from "@/src/lib/api";
 import { colors, fonts, radius } from "@/src/lib/theme";
+import { formatDateLocale, toISODate } from "@/src/lib/format";
 
 type Form = {
   name: string;
@@ -51,7 +53,7 @@ const STEPS: { title: string; subtitle?: string; field: keyof Form | "choice" | 
   { title: "Your height (cm)", field: "height_cm", keyboard: "numeric", placeholder: "e.g. 172" },
   { title: "Your current weight (kg)", field: "current_weight_kg", keyboard: "numeric", placeholder: "e.g. 78" },
   { title: "Your goal weight (kg)", field: "goal_weight_kg", keyboard: "numeric", placeholder: "e.g. 70" },
-  { title: "Goal deadline", subtitle: "When do you want to reach it? YYYY-MM-DD", field: "goal_deadline", placeholder: "2026-08-31" },
+  { title: "Goal deadline", subtitle: "When do you want to reach it?", field: "goal_deadline" },
   {
     title: "Activity level",
     field: "choice",
@@ -214,6 +216,8 @@ export default function Onboarding() {
                 );
               })}
             </View>
+          ) : current.field === "goal_deadline" ? (
+            <DeadlinePicker value={form.goal_deadline} onChange={(v) => setVal("goal_deadline", v)} />
           ) : current.field === "summary" ? (
             <View style={styles.summary}>
               <Text style={styles.summaryHi}>Hi {form.name || "there"} 👋</Text>
@@ -290,4 +294,80 @@ const styles = StyleSheet.create({
   footer: { flexDirection: "row", gap: 12, padding: 24, paddingTop: 0 },
   back: { alignItems: "center", justifyContent: "center", paddingHorizontal: 18, minHeight: 56 },
   backText: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.textMute },
+});
+
+function DeadlinePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [showPicker, setShowPicker] = useState(false);
+  const presets = [
+    { label: "3 months", months: 3 },
+    { label: "6 months", months: 6 },
+    { label: "12 months", months: 12 },
+  ];
+  const presetDate = (months: number) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    onChange(toISODate(d));
+  };
+  const minDate = new Date();
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 3);
+
+  return (
+    <View style={{ gap: 10, marginTop: 24 }}>
+      <View style={{ flexDirection: "row", gap: 8 }}>
+        {presets.map((p) => {
+          const d = new Date();
+          d.setMonth(d.getMonth() + p.months);
+          const selected = value === toISODate(d);
+          return (
+            <Pressable
+              key={p.label}
+              onPress={() => presetDate(p.months)}
+              style={[pickerStyles.preset, selected && pickerStyles.presetActive]}
+              testID={`onb-deadline-${p.months}`}
+            >
+              <Text style={[pickerStyles.presetText, selected && pickerStyles.presetTextActive]}>{p.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Pressable onPress={() => setShowPicker(true)} style={pickerStyles.dateBtn} testID="onb-deadline-pick">
+        <Text style={[pickerStyles.dateLabel, !value && { color: colors.textDim }]}>
+          {value ? formatDateLocale(value) : "Pick a custom date"}
+        </Text>
+        <Text style={pickerStyles.dateHint}>Tap to choose</Text>
+      </Pressable>
+
+      {showPicker && (
+        <DateTimePicker
+          value={value ? new Date(value) : new Date()}
+          mode="date"
+          display={Platform.OS === "ios" ? "inline" : "default"}
+          minimumDate={minDate}
+          maximumDate={maxDate}
+          onChange={(_e, d) => {
+            if (Platform.OS !== "ios") setShowPicker(false);
+            if (d) onChange(toISODate(d));
+          }}
+        />
+      )}
+      {value ? (
+        <Text style={pickerStyles.hint}>
+          Goal date: {formatDateLocale(value)}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  preset: { flex: 1, paddingVertical: 14, paddingHorizontal: 8, borderRadius: 14, backgroundColor: colors.bgAlt, borderWidth: 1, borderColor: colors.border, alignItems: "center" },
+  presetActive: { backgroundColor: colors.brand, borderColor: colors.brand },
+  presetText: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.text },
+  presetTextActive: { color: "#fff" },
+  dateBtn: { backgroundColor: colors.bgWarm, borderRadius: 14, padding: 16, marginTop: 4 },
+  dateLabel: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.text },
+  dateHint: { fontFamily: fonts.body, fontSize: 12, color: colors.textMute, marginTop: 4 },
+  hint: { fontFamily: fonts.bodyMed, color: colors.brand, fontSize: 13, textAlign: "center", marginTop: 4 },
 });

@@ -23,7 +23,11 @@
         "backgroundColor": "#2B4C3B"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "READ_MEDIA_IMAGES"]
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -54,7 +58,9 @@
           "photosPermission": "Upload meal photos for AI analysis",
           "cameraPermission": "Scan meals to track calories automatically"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

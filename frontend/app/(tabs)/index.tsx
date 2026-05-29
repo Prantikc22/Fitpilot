@@ -11,6 +11,9 @@ import { Card } from "@/src/components/Card";
 import { MetricCard } from "@/src/components/MetricCard";
 import { MetricRow } from "@/src/components/MetricRow";
 import { HealthScoreGauge } from "@/src/components/HealthScoreGauge";
+import { HealthScoreModal } from "@/src/components/HealthScoreModal";
+import { BMICard } from "@/src/components/BMICard";
+import { MarkdownText } from "@/src/components/MarkdownText";
 import { WeightChart, Point } from "@/src/components/WeightChart";
 import { colors, fonts } from "@/src/lib/theme";
 
@@ -30,6 +33,8 @@ export default function Home() {
   const [habit, setHabit] = useState<{ water_ml: number; steps: number; exercise_done: boolean } | null>(null);
   const [aiSummary, setAiSummary] = useState<string>("");
   const [score, setScore] = useState<number>(0);
+  const [scoreBreakdown, setScoreBreakdown] = useState<Record<string, number> | null>(null);
+  const [scoreOpen, setScoreOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!session?.user || !profile) return;
@@ -72,6 +77,7 @@ export default function Home() {
         weight_trend_kg_week: trend,
       });
       setScore(s.score);
+      setScoreBreakdown(s.breakdown as any);
     } catch {}
   }, [session?.user?.id, profile?.daily_calorie_target, profile?.daily_protein_target]);
 
@@ -144,26 +150,35 @@ export default function Home() {
           </View>
         </View>
 
-        <Card style={{ flexDirection: "row", alignItems: "center", gap: 16 }} testID="health-score-card">
-          <HealthScoreGauge value={score} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.cardLabel}>Today</Text>
-            <Text style={styles.cardTitle}>Health Score</Text>
-            <Text style={styles.cardSub}>
-              Based on your calories, protein, water, steps, and weight trend.
-            </Text>
-          </View>
-        </Card>
+        <Pressable onPress={() => setScoreOpen(true)} testID="health-score-card">
+          <Card style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+            <HealthScoreGauge value={score} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardLabel}>Today · tap for details</Text>
+              <Text style={styles.cardTitle}>Health Score</Text>
+              <Text style={styles.cardSub}>
+                Calorie + protein adherence, hydration, steps, exercise and weight trend.
+              </Text>
+            </View>
+          </Card>
+        </Pressable>
 
         {aiSummary ? (
           <Card variant="dark" testID="ai-summary-card" style={{ marginTop: 16 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <Sparkles color="#fff" size={16} />
-              <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Daily Coach</Text>
+              <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Today's Coach Note</Text>
             </View>
-            <Text style={styles.aiText}>{aiSummary}</Text>
+            <MarkdownText dark>{aiSummary}</MarkdownText>
           </Card>
         ) : null}
+
+        <View style={{ marginTop: 16 }}>
+          <BMICard
+            weightKg={latestWeight || profile.current_weight_kg || 0}
+            heightCm={profile.height_cm || 0}
+          />
+        </View>
 
         <View style={styles.grid}>
           <View style={styles.gridCol}>
@@ -245,6 +260,13 @@ export default function Home() {
           <Text style={[styles.fabText, { color: colors.brand }]}>Log</Text>
         </Pressable>
       </View>
+
+      <HealthScoreModal
+        visible={scoreOpen}
+        onClose={() => setScoreOpen(false)}
+        score={score}
+        breakdown={scoreBreakdown}
+      />
     </SafeAreaView>
   );
 }

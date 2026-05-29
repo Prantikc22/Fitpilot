@@ -336,32 +336,161 @@ async def coach_message(req: CoachReq):
 @api.post("/meal-plan/generate")
 async def meal_plan(req: MealPlanReq):
     p = req.profile
-    sys = "You generate realistic, budget-aware, cuisine-appropriate daily meal plans. Output strict JSON only."
+    sys = (
+        "You are a professional nutritionist creating personalized daily meal plans. "
+        "Be realistic, budget-aware, and cuisine-appropriate. Never mention that you are an AI. "
+        "Use natural meal names. Output strict JSON only."
+    )
     user = (
         f"Create today's meal plan for: weight={p.current_weight_kg}kg -> goal {p.goal_weight_kg}kg, "
         f"diet={p.diet_pref or 'omnivore'}, cuisine={p.cuisine or 'mixed'}, "
         f"allergies={p.allergies or []}, monthly budget≈{p.budget_monthly}, "
         f"daily calorie target≈{p.daily_calorie_target}, protein≈{p.daily_protein_target}g."
         + (f" Yesterday they ate {req.yesterday_calories} kcal." if req.yesterday_calories else "")
-        + ' Return JSON: {"breakfast":{"name":str,"calories":int,"protein":int,"items":[str]},'
-        + '"lunch":{...},"dinner":{...},"snack":{...},"total_calories":int,"total_protein":int,"tip":str}'
-    )
-    raw = await call_openrouter(
-        [{"role": "system", "content": sys}, {"role": "user", "content": user}],
-        json_mode=True,
-        max_tokens=900,
+        + ' Return JSON: {"breakfast":{"name":str,"calories":int,"protein":int,"items":[str],"prep_time":"e.g. 10 min"},'
+        + '"lunch":{...},"dinner":{...},"snack":{...},"total_calories":int,"total_protein":int,"tip":"one practical tip"}'
+        + " Items should be concrete (e.g. '2 boiled eggs', '1 cup oats with banana')."
     )
     try:
+        raw = await call_openrouter(
+            [{"role": "system", "content": sys}, {"role": "user", "content": user}],
+            json_mode=True,
+            max_tokens=900,
+        )
+        return _extract_json(raw)
+    except Exception as exc:
+        logger.warning("Meal plan failed, using fallback: %s", exc)
+        return _fallback_meal_plan(p)
+
+
+def _fallback_meal_plan(p: ProfileCtx) -> dict:
+    """Sensible default plan when AI is unreachable."""
+    diet = (p.diet_pref or "").lower()
+    cuisine = (p.cuisine or "").lower()
+    veg = "vegetarian" in diet or "vegan" in diet
+    indian = "indian" in cuisine
+    cal_t = p.daily_calorie_target or 1900
+    pro_t = p.daily_protein_target or 110
+    if indian and veg:
+        meals = {
+            "breakfast": {"name": "Vegetable Poha with Curd", "calories": int(cal_t * 0.22), "protein": int(pro_t * 0.20), "items": ["1 bowl poha with peas and peanuts", "1/2 cup curd", "1 apple"], "prep_time": "15 min"},
+            "lunch": {"name": "Dal, Roti & Salad Bowl", "calories": int(cal_t * 0.32), "protein": int(pro_t * 0.30), "items": ["2 phulkas", "1 cup moong dal", "1 cup sabzi", "Cucumber salad"], "prep_time": "25 min"},
+            "dinner": {"name": "Paneer Bhurji with Brown Rice", "calories": int(cal_t * 0.30), "protein": int(pro_t * 0.35), "items": ["120g paneer bhurji", "1 cup brown rice", "Steamed broccoli"], "prep_time": "25 min"},
+            "snack": {"name": "Roasted Chana & Tea", "calories": int(cal_t * 0.16), "protein": int(pro_t * 0.15), "items": ["1 small bowl roasted chana", "Masala tea (no sugar)"], "prep_time": "5 min"},
+        }
+    elif indian:
+        meals = {
+            "breakfast": {"name": "Egg White Omelette & Toast", "calories": int(cal_t * 0.22), "protein": int(pro_t * 0.25), "items": ["3 egg-white omelette with veggies", "2 multigrain toast", "1 orange"], "prep_time": "10 min"},
+            "lunch": {"name": "Grilled Chicken Thali", "calories": int(cal_t * 0.32), "protein": int(pro_t * 0.35), "items": ["120g grilled chicken", "1 cup dal", "2 phulkas", "Salad"], "prep_time": "30 min"},
+            "dinner": {"name": "Fish Curry with Brown Rice", "calories": int(cal_t * 0.30), "protein": int(pro_t * 0.30), "items": ["120g fish curry (low-oil)", "1 cup brown rice", "Stir-fried beans"], "prep_time": "30 min"},
+            "snack": {"name": "Greek Yogurt & Almonds", "calories": int(cal_t * 0.16), "protein": int(pro_t * 0.10), "items": ["1 cup Greek yogurt", "10 almonds"], "prep_time": "2 min"},
+        }
+    elif veg:
+        meals = {
+            "breakfast": {"name": "Oats & Berries", "calories": int(cal_t * 0.22), "protein": int(pro_t * 0.20), "items": ["1 cup oats with milk", "Mixed berries", "1 tbsp peanut butter"], "prep_time": "8 min"},
+            "lunch": {"name": "Quinoa Buddha Bowl", "calories": int(cal_t * 0.32), "protein": int(pro_t * 0.30), "items": ["1 cup cooked quinoa", "Chickpeas & roasted veg", "Tahini drizzle"], "prep_time": "25 min"},
+            "dinner": {"name": "Tofu Stir-fry with Noodles", "calories": int(cal_t * 0.30), "protein": int(pro_t * 0.35), "items": ["150g tofu stir-fry", "1 cup whole-wheat noodles", "Mixed veg"], "prep_time": "20 min"},
+            "snack": {"name": "Cottage Cheese & Fruit", "calories": int(cal_t * 0.16), "protein": int(pro_t * 0.15), "items": ["1/2 cup cottage cheese", "1 pear"], "prep_time": "2 min"},
+        }
+    else:
+        meals = {
+            "breakfast": {"name": "Greek Yogurt Parfait", "calories": int(cal_t * 0.22), "protein": int(pro_t * 0.25), "items": ["1 cup Greek yogurt", "Berries & granola", "1 tbsp honey"], "prep_time": "5 min"},
+            "lunch": {"name": "Grilled Chicken Salad", "calories": int(cal_t * 0.32), "protein": int(pro_t * 0.35), "items": ["120g grilled chicken", "Mixed greens", "Quinoa", "Olive-oil dressing"], "prep_time": "20 min"},
+            "dinner": {"name": "Baked Salmon & Veggies", "calories": int(cal_t * 0.30), "protein": int(pro_t * 0.30), "items": ["120g baked salmon", "Roasted sweet potato", "Steamed broccoli"], "prep_time": "30 min"},
+            "snack": {"name": "Apple & Almond Butter", "calories": int(cal_t * 0.16), "protein": int(pro_t * 0.10), "items": ["1 apple", "1 tbsp almond butter"], "prep_time": "1 min"},
+        }
+    total_cal = sum(m["calories"] for m in meals.values())
+    total_pro = sum(m["protein"] for m in meals.values())
+    return {
+        **meals,
+        "total_calories": total_cal,
+        "total_protein": total_pro,
+        "tip": "Eat slowly and drink a glass of water before each meal — it improves portion control naturally.",
+    }
+
+
+@api.post("/meal-plan/improve")
+async def meal_plan_improve(req: dict):
+    """Refine an existing meal plan based on user feedback."""
+    profile = req.get("profile") or {}
+    current_plan = req.get("current_plan") or {}
+    feedback = (req.get("feedback") or "").strip()
+    if not feedback:
+        raise HTTPException(400, "feedback required")
+    sys = (
+        "You are a nutritionist refining a daily meal plan based on the user's feedback. "
+        "Preserve calorie & protein targets. Output strict JSON in the same shape as input. "
+        "Do not mention that you are an AI."
+    )
+    user = (
+        f"Profile: {json.dumps({k: profile.get(k) for k in ('diet_pref','cuisine','allergies','daily_calorie_target','daily_protein_target')})}.\n"
+        f"Current plan: {json.dumps(current_plan)[:1500]}.\n"
+        f"User feedback: {feedback}.\n"
+        'Return updated JSON: {"breakfast":{"name":str,"calories":int,"protein":int,"items":[str],"prep_time":str},'
+        '"lunch":{...},"dinner":{...},"snack":{...},"total_calories":int,"total_protein":int,"tip":str}'
+    )
+    try:
+        raw = await call_openrouter(
+            [{"role": "system", "content": sys}, {"role": "user", "content": user}],
+            json_mode=True,
+            max_tokens=900,
+        )
         return _extract_json(raw)
     except Exception:
-        logger.error("Meal plan parse fail: %s", raw[:300])
-        raise HTTPException(502, "Could not parse meal plan")
+        # If improvement fails just return current plan unchanged with a note
+        out = dict(current_plan)
+        out["tip"] = "Couldn't refine right now — try again in a moment."
+        return out
+
+
+@api.post("/label/analyze", response_model=FoodAnalyzeRes)
+async def label_analyze(req: FoodAnalyzeReq):
+    """Analyze a packaged-food nutrition label."""
+    if not req.image_base64:
+        raise HTTPException(400, "image_base64 required")
+    prompt = (
+        "You are reading a packaged food's nutrition label. Identify the product name and per-serving macros. "
+        "Return ONLY JSON: "
+        '{"items":[{"name":"<product> (per serving)","quantity":"1 serving","calories":<num>,'
+        '"protein":<num>,"carbs":<num>,"fat":<num>}],"summary":"<one-line>"} '
+        "If the label is unreadable, return an empty items array."
+    )
+    raw = await call_openai_vision(req.image_base64, prompt)
+    try:
+        data = _extract_json(raw)
+    except Exception:
+        raise HTTPException(502, "Could not parse label")
+    items_raw = data.get("items") or []
+    items, tc, tp, tcarb, tf = [], 0.0, 0.0, 0.0, 0.0
+    for it in items_raw:
+        try:
+            fi = FoodItem(
+                name=str(it.get("name", "Packaged food")),
+                quantity=str(it.get("quantity", "1 serving")),
+                calories=float(it.get("calories", 0) or 0),
+                protein=float(it.get("protein", 0) or 0),
+                carbs=float(it.get("carbs", 0) or 0),
+                fat=float(it.get("fat", 0) or 0),
+            )
+            items.append(fi)
+            tc += fi.calories; tp += fi.protein; tcarb += fi.carbs; tf += fi.fat
+        except Exception:
+            continue
+    if not items:
+        raise HTTPException(422, "Couldn't read the label clearly. Try a brighter, closer photo.")
+    return FoodAnalyzeRes(
+        items=items, total_calories=round(tc,1), total_protein=round(tp,1),
+        total_carbs=round(tcarb,1), total_fat=round(tf,1), summary=str(data.get("summary","")),
+    )
 
 
 @api.post("/weekly-report")
 async def weekly_report(req: WeeklyReportReq):
     p = req.profile
-    sys = "You are a supportive weight-loss coach writing a weekly summary. Output strict JSON."
+    sys = (
+        "You are a supportive nutritionist writing a personal weekly summary. "
+        "Be specific, kind, and actionable. Never mention that you are an AI. Output strict JSON."
+    )
     user = (
         f"User profile: weight={p.current_weight_kg}kg, goal={p.goal_weight_kg}kg, "
         f"calorie target={p.daily_calorie_target}, protein target={p.daily_protein_target}g. "
@@ -369,15 +498,31 @@ async def weekly_report(req: WeeklyReportReq):
         f"avg protein={req.avg_protein:.0f}g, health scores={req.health_scores}. "
         'Return JSON: {"highlight":str,"wins":[str],"improvements":[str],"next_week_focus":str}'
     )
-    raw = await call_openrouter(
-        [{"role": "system", "content": sys}, {"role": "user", "content": user}],
-        json_mode=True,
-        max_tokens=600,
-    )
     try:
+        raw = await call_openrouter(
+            [{"role": "system", "content": sys}, {"role": "user", "content": user}],
+            json_mode=True,
+            max_tokens=600,
+        )
         return _extract_json(raw)
     except Exception:
-        raise HTTPException(502, "Could not parse weekly report")
+        lost = req.weight_lost_kg or 0
+        wins = []
+        improvements = []
+        if lost > 0:
+            wins.append(f"You lost {lost:.1f} kg this week — fantastic momentum.")
+        else:
+            improvements.append("Weight held steady — focus on a small daily calorie deficit this week.")
+        if (req.avg_protein or 0) >= (p.daily_protein_target or 0) * 0.9:
+            wins.append("Protein intake was on target — great for preserving muscle while losing fat.")
+        else:
+            improvements.append("Protein intake was below target — add one extra protein source per meal.")
+        return {
+            "highlight": "Solid week. Keep going — consistency beats intensity every time.",
+            "wins": wins or ["You showed up every day."],
+            "improvements": improvements or ["Try to log breakfast more consistently."],
+            "next_week_focus": "Hit your protein target on 6 of 7 days and walk 7,000+ steps daily.",
+        }
 
 
 @api.post("/health-score/compute")

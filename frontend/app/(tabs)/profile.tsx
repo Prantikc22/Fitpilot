@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ChevronRight, Crown, LogOut, Shield, Sparkles, User as UserIcon } from "lucide-react-native";
+import { ChevronRight, Crown, LogOut, Shield, Sparkles, User as UserIcon, Stethoscope, Heart } from "lucide-react-native";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 import { Card } from "@/src/components/Card";
@@ -57,6 +57,23 @@ export default function Profile() {
             <Stat label="Goal" value={`${profile.goal_weight_kg || 0}kg`} />
           </View>
         </Card>
+
+        <Section title="Premium">
+          <Row
+            label="Talk to a Dietitian"
+            sub={pro || profile.subscription_tier !== "free" ? "Chat or schedule a 1-on-1 consult" : "Unlock real human nutritionists with Pro"}
+            onPress={() => router.push("/dietitian")}
+            testID="profile-dietitian"
+            icon={<Stethoscope size={18} color={colors.brand} />}
+          />
+          <Row
+            label="Connect Health"
+            sub="Apple Health, Google Fit, Fitbit & food delivery"
+            onPress={() => router.push("/health-sync")}
+            testID="profile-health-sync"
+            icon={<Heart size={18} color={colors.terracotta} />}
+          />
+        </Section>
 
         <Section title="Subscription">
           <Row

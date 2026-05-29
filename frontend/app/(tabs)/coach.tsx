@@ -16,7 +16,10 @@ import { Send, Sparkles } from "lucide-react-native";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/lib/supabase";
 import { api } from "@/src/lib/api";
+import { MarkdownText } from "@/src/components/MarkdownText";
 import { colors, fonts, radius } from "@/src/lib/theme";
+import { useRouter } from "expo-router";
+import { UtensilsCrossed } from "lucide-react-native";
 
 type Msg = { id: string; role: "user" | "assistant"; content: string };
 
@@ -34,6 +37,7 @@ function startOfDayISO() {
 }
 
 export default function Coach() {
+  const router = useRouter();
   const { session, profile } = useAuth();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
@@ -110,6 +114,11 @@ export default function Coach() {
         </View>
         <Text style={styles.subtitle}>Evidence-based, warm, and on your side.</Text>
       </View>
+
+      <Pressable style={styles.dietBtn} onPress={() => router.push("/(tabs)/log")} testID="coach-open-diet">
+        <UtensilsCrossed color={colors.brand} size={16} />
+        <Text style={styles.dietBtnText}>View today's meal plan</Text>
+      </Pressable>
 
       <FlatList
         ref={listRef}
@@ -191,4 +200,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   send: { backgroundColor: colors.brand, width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  dietBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginHorizontal: 20, marginBottom: 8, paddingVertical: 12, borderRadius: 999, backgroundColor: colors.brandLight },
+  dietBtnText: { fontFamily: fonts.bodySemi, color: colors.brand, fontSize: 14 },
 });

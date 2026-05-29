@@ -1,28 +1,35 @@
 # Leanly — PRD
 
-**Leanly** is an AI-powered weight-loss coach for iOS + Android (single Expo React Native codebase). It helps users lose weight safely and consistently through personalized meal planning, AI food scans, progress tracking, and AI coaching.
+**Leanly** is an AI-powered weight-loss coach for iOS + Android (Expo React Native).
 
 ## Stack
-- **Frontend**: Expo SDK 54, expo-router, TypeScript, react-native-svg charts, lucide-react-native icons, Manrope + Work Sans fonts.
-- **Backend**: FastAPI thin AI proxy (`/api/*`) for OpenAI Vision + OpenRouter.
-- **Database & Auth**: Supabase Postgres + Supabase Auth (email/password) with strict RLS per user.
-- **AI**: OpenAI `gpt-4o-mini` Vision (food analysis), OpenRouter free models (`google/gemma-4-26b-a4b-it:free`, `openai/gpt-oss-120b:free`, `z-ai/glm-4.5-air:free`, `deepseek/deepseek-v4-flash:free`, etc.) with automatic fallback for coaching, meal plans, weekly reports.
-- **Subscriptions**: RevenueCat (`react-native-purchases` + `react-native-purchases-ui`) — works only in dev/standalone builds; preview shows tiered paywall UI with a sandbox unlock.
+- Expo SDK 54, expo-router, TypeScript, react-native-svg charts, lucide icons, Manrope + Work Sans fonts
+- FastAPI thin AI proxy (`/api/*`) for OpenAI Vision + OpenRouter
+- Supabase Postgres + Auth + RLS
+- OpenAI `gpt-4o-mini` Vision; OpenRouter free-model chain with fallback (gemma, openai/gpt-oss, glm, deepseek, llama)
+- RevenueCat (`react-native-purchases` + `react-native-purchases-ui`) — works in dev/standalone builds, sandbox-unlock fallback in Expo Go
 
-## Schema (Supabase Postgres)
-- `profiles`, `food_logs`, `weight_logs`, `habits`, `meal_plans`, `coach_messages`, `weekly_reports` — all RLS-scoped to `auth.uid()`. Auto-create profile trigger on `auth.users` insert.
+## Schema
+`profiles` (with `food_scans_used`, `ai_generations_used`, `subscription_tier`, `role`), `food_logs`, `weight_logs`, `habits`, `meal_plans`, `coach_messages`, `weekly_reports`, `dietitian_consults`, `delivery_orders` — all RLS-scoped to `auth.uid()`.
 
-## Implemented MVP
-- Auth: email/password sign up / sign in
-- Onboarding: 16-step flow (name, age, gender, height, weight, goal, deadline, activity, diet, allergies, conditions, country, cuisine, budget, aggressiveness, summary)
-- Personalized targets: Mifflin-St Jeor → TDEE → safe deficit (capped, gender-aware)
-- Dashboard: greeting, **Health Score** circular gauge, daily AI coach summary, current weight, weight remaining, calorie + protein progress, weight trend chart with goal line, water + steps cards
-- Food Scan: camera or library → OpenAI Vision → items + macros → log
-- Meal Log: breakfast/lunch/dinner/snack with add/delete + manual entry
-- Daily AI Meal Plan card
-- AI Coach chat (chat history persisted)
-- Progress: weight history, 30/60/90 day prediction, habit tracker (water, steps, sleep, exercise), AI weekly report
-- Profile: plan summary, subscription management, restart onboarding, sign out, admin link if `role='admin'`
-- Paywall (Free/Premium/Pro) integrated with RevenueCat SDK (sandbox-fallback in Expo Go)
-- Admin Dashboard: total users, onboarded, paid users, scans/month, coach msgs, meal plans, estimated MRR
-- Gmail integration deferred (per user choice)
+## Features
+- Auth (email/password) + 16-step onboarding with native date picker + 3/6/12-month preset chips, locale-aware date display
+- **Dashboard**: tappable Health Score gauge → modal with full breakdown, **BMI card** with status pill + range bar, daily nutritionist note (markdown-rendered), weight trend chart, calorie + protein progress, water + steps
+- **Health Score**: weighted from calorie adherence (30), protein (25), water (15), steps (15), exercise (10), weight trend (5)
+- **Food Scan**: OpenAI Vision (camera + library); auto-prompts compress to base64
+- **Meal Log**: add/delete, manual entry, daily meal-plan card
+- **AI Meal Plan**: Pro-gated. Shows **"Your nutritionist is preparing your plan"** 5-step animation while generating (~12s). Rich plan card with meal icons, item pills, prep time, protein chips. **"Ask the nutritionist to improve this plan"** with feedback prompt.
+- **AI Coach** chat with markdown rendering, "View today's meal plan" quick link
+- **Progress**: weight history, 30/60/90 day forecast, habit tracker, AI weekly report (fixed button contrast)
+- **Talk to a Dietitian**: Pro-only consult booking (time slot + topic + notes). Free users see paywall.
+- **Connect Health**: Apple Health, Google Fit, Fitbit, Garmin (stub UI ready, native sync in dev build)
+- **Food Delivery**: manual Swiggy/Zomato/Blinkit/Zepto/Instamart/UberEats/DoorDash entry → auto-creates food log
+- **Paywall** Free / Premium / Pro with RevenueCat + sandbox fallback
+- **Admin Dashboard**: total/onboarded/paid users, scans, coach msgs, meal plans, estimated MRR (role-gated)
+
+## Usage limits (monthly)
+- Free: 5 AI scans, 5 AI generations (coach replies, meal plans)
+- Pro: 50 each, displayed as **"Unlimited"**
+
+## AI fallback responses
+Every AI endpoint (coach, meal plan, weekly report) has a sensible default response if OpenRouter fails, so the app never breaks.

@@ -29,6 +29,17 @@ export type FoodAnalyzeRes = {
   summary?: string;
 };
 
+export type Meal = { name: string; calories: number; protein: number; items: string[]; prep_time?: string };
+export type MealPlan = {
+  breakfast: Meal;
+  lunch: Meal;
+  dinner: Meal;
+  snack: Meal;
+  total_calories: number;
+  total_protein: number;
+  tip?: string;
+};
+
 export const api = {
   computeTargets: (p: {
     age: number;
@@ -61,15 +72,13 @@ export const api = {
   }) => post<{ reply: string }>("/coach/message", p),
 
   mealPlan: (p: { profile: any; yesterday_calories?: number | null }) =>
-    post<{
-      breakfast: { name: string; calories: number; protein: number; items: string[] };
-      lunch: { name: string; calories: number; protein: number; items: string[] };
-      dinner: { name: string; calories: number; protein: number; items: string[] };
-      snack: { name: string; calories: number; protein: number; items: string[] };
-      total_calories: number;
-      total_protein: number;
-      tip?: string;
-    }>("/meal-plan/generate", p),
+    post<MealPlan>("/meal-plan/generate", p),
+
+  improveMealPlan: (p: { profile: any; current_plan: any; feedback: string }) =>
+    post<MealPlan>("/meal-plan/improve", p),
+
+  analyzeLabel: (image_base64: string) =>
+    post<FoodAnalyzeRes>("/label/analyze", { image_base64 }),
 
   weeklyReport: (p: {
     profile: any;
