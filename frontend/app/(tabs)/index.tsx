@@ -39,6 +39,47 @@ export default function Home() {
   const [score, setScore] = useState<number>(0);
   const [scoreBreakdown, setScoreBreakdown] = useState<Record<string, number> | null>(null);
   const [scoreOpen, setScoreOpen] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [showMotivation, setShowMotivation] = useState(true);
+
+  // Calculate streak from habits
+  const loadStreak = useCallback(async () => {
+    if (!session?.user?.id) return;
+    try {
+      const { data: habitData } = await supabase
+        .from("habits")
+        .select("date, exercise_done")
+        .eq("user_id", session.user.id)
+        .order("date", { ascending: false })
+        .limit(60);
+      
+      if (habitData && habitData.length > 0) {
+        let currentStreak = 0;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Get dates where user logged something
+        const activeDates = habitData
+          .filter((h: any) => h.exercise_done)
+          .map((h: any) => h.date);
+        
+        for (let i = 0; i < 60; i++) {
+          const checkDate = new Date(today);
+          checkDate.setDate(checkDate.getDate() - i);
+          const checkDateStr = checkDate.toISOString().slice(0, 10);
+          
+          if (activeDates.includes(checkDateStr)) {
+            currentStreak++;
+          } else if (i > 0) {
+            break;
+          }
+        }
+        setStreak(currentStreak);
+      }
+    } catch (error) {
+      console.log("Error loading streak:", error);
+    }
+  }, [session?.user?.id]);
 
   const load = useCallback(async () => {
     if (!session?.user || !profile) return;
@@ -102,7 +143,8 @@ export default function Home() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load]),
+      loadStreak();
+    }, [load, loadStreak]),
   );
 
   useEffect(() => {
@@ -345,6 +387,15 @@ export default function Home() {
         score={score}
         breakdown={scoreBreakdown}
       />
+
+      {showMotivation && (
+        <DailyMotivationModal
+          streak={streak}
+          healthScore={score}
+          userName={profile?.name || undefined}
+          onClose={() => setShowMotivation(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
