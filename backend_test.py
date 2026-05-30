@@ -5,7 +5,7 @@ import sys
 from typing import Dict, Any
 
 # Use the backend URL from environment
-BACKEND_URL = "https://health-ai-coach-18.preview.emergentagent.com/api"
+BACKEND_URL = "https://code-pull-deploy.preview.emergentagent.com/api"
 
 def test_meal_plan_generate():
     """Test the meal plan generation endpoint"""
