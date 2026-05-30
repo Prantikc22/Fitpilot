@@ -44,6 +44,7 @@ export default function Home() {
   const [scoreOpen, setScoreOpen] = useState(false);
   const [streak, setStreak] = useState(0);
   const [showMotivation, setShowMotivation] = useState(true);
+  const [showCycleTracker, setShowCycleTracker] = useState(false);
 
   // Calculate streak from habits
   const loadStreak = useCallback(async () => {
@@ -213,10 +214,11 @@ export default function Home() {
         }
       >
         <View style={styles.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.hello}>Hi {profile.name || "there"}</Text>
             <Text style={styles.headline}>Let's stay on track today.</Text>
           </View>
+          <StreakBadge streak={streak} compact />
         </View>
 
         <Pressable onPress={() => setScoreOpen(true)} testID="health-score-card">
@@ -323,14 +325,23 @@ export default function Home() {
           </View>
         </Card>
 
+        {/* Achievement Badges */}
+        <AchievementBadges 
+          earned={streak >= 30 ? ["streak_30", "streak_14", "streak_7", "streak_3"] 
+            : streak >= 14 ? ["streak_14", "streak_7", "streak_3"]
+            : streak >= 7 ? ["streak_7", "streak_3"]
+            : streak >= 3 ? ["streak_3"]
+            : []}
+        />
+
         <View style={styles.shortcutRow}>
           <Pressable style={styles.shortcut} onPress={() => router.push("/dietitian")} testID="home-dietitian">
             <Text style={styles.shortcutIcon}>👩‍⚕️</Text>
             <Text style={styles.shortcutText}>Talk to a Dietitian</Text>
           </Pressable>
-          <Pressable style={styles.shortcut} onPress={() => router.push("/health-sync")} testID="home-health">
-            <Text style={styles.shortcutIcon}>❤️</Text>
-            <Text style={styles.shortcutText}>Connect Health</Text>
+          <Pressable style={styles.shortcut} onPress={() => setShowCycleTracker(true)} testID="home-cycle">
+            <Text style={styles.shortcutIcon}>🩸</Text>
+            <Text style={styles.shortcutText}>Cycle Tracker</Text>
           </Pressable>
           <Pressable style={styles.shortcut} onPress={() => router.push("/yoga")} testID="home-yoga">
             <Text style={styles.shortcutIcon}>🧘</Text>
@@ -399,6 +410,11 @@ export default function Home() {
           onClose={() => setShowMotivation(false)}
         />
       )}
+
+      <CycleTracker
+        visible={showCycleTracker}
+        onClose={() => setShowCycleTracker(false)}
+      />
     </SafeAreaView>
   );
 }

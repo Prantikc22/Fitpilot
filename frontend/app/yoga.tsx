@@ -2,13 +2,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, Image, Alert } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, Clock, Crown, Play, CheckCircle, Flame, Trophy, Star } from "lucide-react-native";
+import { X, Clock, Crown, Play, CheckCircle, Flame, Trophy, Star, Wind } from "lucide-react-native";
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring, withSequence, withDelay } from "react-native-reanimated";
 import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/lib/supabase";
 import { Card } from "@/src/components/Card";
 import { ProLockCard } from "@/src/components/ProLockCard";
 import { Button } from "@/src/components/Button";
+import { BreathingTimer } from "@/src/components/BreathingTimer";
 import { colors, fonts, radius } from "@/src/lib/theme";
 
 const SEQUENCES = [
@@ -92,6 +93,7 @@ export default function Yoga() {
   const [completedToday, setCompletedToday] = useState<string[]>([]);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showBreathing, setShowBreathing] = useState(false);
 
   const celebrationScale = useSharedValue(1);
 
@@ -294,6 +296,22 @@ export default function Yoga() {
           </Card>
         </Animated.View>
 
+        {/* Breathing Exercise Quick Access */}
+        <Animated.View entering={FadeInDown.delay(150).duration(400)}>
+          <Pressable onPress={() => setShowBreathing(true)} testID="breathing-btn">
+            <Card style={styles.breathingCard}>
+              <View style={styles.breathingIcon}>
+                <Wind color={colors.brand} size={24} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.breathingTitle}>Breathing Exercise</Text>
+                <Text style={styles.breathingDesc}>Box breathing, 4-7-8 & more</Text>
+              </View>
+              <Play color={colors.brand} size={20} />
+            </Card>
+          </Pressable>
+        </Animated.View>
+
         {!isPro && (
           <Animated.View entering={FadeInDown.delay(200).duration(400)} style={{ marginTop: 16 }}>
             <ProLockCard
@@ -435,6 +453,8 @@ export default function Yoga() {
           New to yoga? Move slowly, breathe through the nose, and never push into sharp pain.
         </Text>
       </ScrollView>
+
+      <BreathingTimer visible={showBreathing} onClose={() => setShowBreathing(false)} />
     </SafeAreaView>
   );
 }
@@ -542,4 +562,32 @@ const styles = StyleSheet.create({
   timelineBenefitActive: { color: colors.textMute },
 
   footer: { fontFamily: fonts.body, color: colors.textDim, fontSize: 12, textAlign: "center", marginTop: 20, lineHeight: 18 },
+
+  // Breathing Card
+  breathingCard: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    padding: 16, 
+    marginTop: 12 
+  },
+  breathingIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.brandLight,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  breathingTitle: { 
+    fontFamily: fonts.bodySemi, 
+    fontSize: 15, 
+    color: colors.text 
+  },
+  breathingDesc: { 
+    fontFamily: fonts.body, 
+    fontSize: 13, 
+    color: colors.textMute, 
+    marginTop: 2 
+  },
 });
