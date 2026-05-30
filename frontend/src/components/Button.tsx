@@ -1,6 +1,7 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts, radius } from "@/src/lib/theme";
 
 type Props = {
   title: string;
@@ -14,6 +15,8 @@ type Props = {
 };
 
 export function Button({ title, onPress, variant = "primary", loading, disabled, style, testID, size = "lg" }: Props) {
+  const { colors } = useTheme();
+  
   const bg =
     variant === "primary"
       ? colors.brand
@@ -25,6 +28,7 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
   const fg = variant === "primary" || variant === "danger" ? colors.textInv : colors.brand;
   const border = variant === "outline" ? colors.border : "transparent";
   const minH = size === "lg" ? 56 : 44;
+  
   return (
     <Pressable
       onPress={onPress}

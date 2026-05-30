@@ -1,8 +1,11 @@
 import { Tabs } from "expo-router";
 import { Home, UtensilsCrossed, MessageCircleHeart, LineChart, User } from "lucide-react-native";
-import { colors, fonts } from "@/src/lib/theme";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts } from "@/src/lib/theme";
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
+  
   return (
     <Tabs
       screenOptions={{

@@ -6,6 +6,7 @@ import { Camera, Sparkles, Plus, TrendingDown, Flame, Droplets, ChevronRight, Ta
 import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSequence, withSpring, withDelay } from "react-native-reanimated";
 
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme, lightColors } from "@/src/contexts/ThemeContext";
 import { supabase } from "@/src/lib/supabase";
 import { api } from "@/src/lib/api";
 import { Card } from "@/src/components/Card";
@@ -22,7 +23,7 @@ import { StreakCelebration } from "@/src/components/StreakCelebration";
 import { AchievementBadges } from "@/src/components/AchievementBadges";
 import { CycleTracker } from "@/src/components/CycleTracker";
 import { DailyWinCard } from "@/src/components/DailyWinCard";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { fonts, radius } from "@/src/lib/theme";
 
 function startOfTodayISO() {
   const d = new Date();
@@ -33,6 +34,7 @@ function startOfTodayISO() {
 export default function Home() {
   const router = useRouter();
   const { profile, session } = useAuth();
+  const { colors } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [todayCals, setTodayCals] = useState(0);
   const [todayPro, setTodayPro] = useState(0);
@@ -215,7 +217,7 @@ export default function Home() {
   })();
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         refreshControl={
@@ -232,8 +234,8 @@ export default function Home() {
       >
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.hello}>Hi {profile.name || "there"}</Text>
-            <Text style={styles.headline}>Let's stay on track today.</Text>
+            <Text style={[styles.hello, { color: colors.textMute }]}>Hi {profile.name || "there"}</Text>
+            <Text style={[styles.headline, { color: colors.text }]}>Let's stay on track today.</Text>
           </View>
           <StreakBadge streak={streak} compact />
         </View>
@@ -493,20 +495,21 @@ export default function Home() {
   );
 }
 
+// StyleSheet uses lightColors as base - dynamic colors applied inline via useTheme()
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, backgroundColor: lightColors.bg },
   scroll: { padding: 20, gap: 0 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 },
-  hello: { fontFamily: fonts.bodyMed, fontSize: 14, color: colors.textMute },
-  headline: { fontFamily: fonts.headingExt, fontSize: 26, color: colors.text, letterSpacing: -0.8, marginTop: 4 },
+  hello: { fontFamily: fonts.bodyMed, fontSize: 14, color: lightColors.textMute },
+  headline: { fontFamily: fonts.headingExt, fontSize: 26, color: lightColors.text, letterSpacing: -0.8, marginTop: 4 },
   title: { fontFamily: fonts.headingExt, fontSize: 22, padding: 20 },
-  cardLabel: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textTransform: "uppercase", letterSpacing: 0.7 },
-  cardTitle: { fontFamily: fonts.heading, fontSize: 18, color: colors.text, marginTop: 2 },
-  cardSub: { fontFamily: fonts.body, fontSize: 13, color: colors.textMute, marginTop: 4, lineHeight: 18 },
+  cardLabel: { fontFamily: fonts.bodyMed, fontSize: 11, color: lightColors.textMute, textTransform: "uppercase", letterSpacing: 0.7 },
+  cardTitle: { fontFamily: fonts.heading, fontSize: 18, color: lightColors.text, marginTop: 2 },
+  cardSub: { fontFamily: fonts.body, fontSize: 13, color: lightColors.textMute, marginTop: 4, lineHeight: 18 },
   aiText: { fontFamily: fonts.body, color: "#fff", fontSize: 15, lineHeight: 22 },
   grid: { flexDirection: "row", gap: 12, marginTop: 16 },
   gridCol: { flex: 1 },
-  proj: { fontFamily: fonts.bodyMed, color: colors.brand, fontSize: 13, marginTop: 12 },
+  proj: { fontFamily: fonts.bodyMed, color: lightColors.brand, fontSize: 13, marginTop: 12 },
   fabRow: {
     position: "absolute",
     left: 0,
@@ -530,48 +533,48 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  fabPrimary: { backgroundColor: colors.brand },
-  fabSecondary: { backgroundColor: colors.brandLight },
+  fabPrimary: { backgroundColor: lightColors.brand },
+  fabSecondary: { backgroundColor: lightColors.brandLight },
   fabText: { color: "#fff", fontFamily: fonts.bodySemi, fontSize: 15 },
-  waterBtn: { backgroundColor: colors.brandLight, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
-  waterBtnText: { fontFamily: fonts.bodySemi, color: colors.brand, fontSize: 14 },
+  waterBtn: { backgroundColor: lightColors.brandLight, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
+  waterBtnText: { fontFamily: fonts.bodySemi, color: lightColors.brand, fontSize: 14 },
   shortcutRow: { flexDirection: "row", gap: 10, marginTop: 16 },
-  shortcut: { flex: 1, backgroundColor: colors.bgAlt, borderRadius: 16, padding: 12, alignItems: "center", gap: 6 },
+  shortcut: { flex: 1, backgroundColor: lightColors.bgAlt, borderRadius: 16, padding: 12, alignItems: "center", gap: 6 },
   shortcutIcon: { fontSize: 22 },
-  shortcutText: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textAlign: "center" },
+  shortcutText: { fontFamily: fonts.bodyMed, fontSize: 11, color: lightColors.textMute, textAlign: "center" },
   // Blood Test Card Styles
   bloodTestCard: {
     marginTop: 16,
-    backgroundColor: colors.bgAlt,
+    backgroundColor: lightColors.bgAlt,
     borderRadius: radius.lg,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderWidth: 1.5,
-    borderColor: colors.terracotta + "30",
+    borderColor: lightColors.terracotta + "30",
   },
   bloodTestIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.terracotta + "15",
+    backgroundColor: lightColors.terracotta + "15",
     alignItems: "center",
     justifyContent: "center",
   },
   bloodTestTitle: {
     fontFamily: fonts.heading,
     fontSize: 16,
-    color: colors.text,
+    color: lightColors.text,
   },
   bloodTestSub: {
     fontFamily: fonts.body,
     fontSize: 12,
-    color: colors.textMute,
+    color: lightColors.textMute,
     marginTop: 2,
   },
   bloodTestBadge: {
-    backgroundColor: colors.terracotta + "20",
+    backgroundColor: lightColors.terracotta + "20",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
@@ -579,6 +582,6 @@ const styles = StyleSheet.create({
   bloodTestBadgeText: {
     fontFamily: fonts.bodySemi,
     fontSize: 12,
-    color: colors.terracotta,
+    color: lightColors.terracotta,
   },
 });

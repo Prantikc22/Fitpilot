@@ -25,6 +25,9 @@
 - **AI Meal Plan**: Pro-gated. Shows **"Your nutritionist is preparing your plan"** 5-step animation while generating (~12s). Rich plan card with meal icons, item pills, prep time, protein chips. **"Ask the nutritionist to improve this plan"** with feedback prompt.
 - **AI Coach** chat with markdown rendering, "View today's meal plan" quick link
 - **AI Coach Note**: Actionable, concise tips (2 sentences max) with loading state animation
+- **Proactive AI Coach**: Time-of-day aware prompts (Morning/Lunch/Evening), contextual check-in banners
+- **Visual Yoga Flow**: Guided yoga sequences with pose timer, breathing cues, and reanimated progress visualization
+- **Dark Mode**: Full app-wide dark theme with toggle in Profile (Light/System/Dark modes), persisted preference
 - **Progress**: weight history, 30/60/90 day forecast, habit tracker, AI weekly report (fixed button contrast)
 - **Talk to a Dietitian**: Pro-only consult booking (time slot + topic + notes). Provider names hidden - "A nutritionist will be assigned" message shown. Admin assigns expert later. Free users see paywall.
 - **Connect Health**: Apple Health, Google Fit, Fitbit, Garmin (stub UI ready, native sync in dev build)

@@ -18,8 +18,20 @@ import { useFonts } from "expo-font";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { SubscriptionProvider } from "@/src/contexts/SubscriptionContext";
+import { ThemeProvider, useTheme } from "@/src/contexts/ThemeContext";
 
 SplashScreen.preventAutoHideAsync();
+
+function ThemedApp() {
+  const { isDark, colors } = useTheme();
+  
+  return (
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+    </>
+  );
+}
 
 export default function RootLayout() {
   const [iconsLoaded, iconError] = useIconFonts();
@@ -42,12 +54,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <SubscriptionProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#FAFAFA" } }} />
-          </SubscriptionProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <SubscriptionProvider>
+              <ThemedApp />
+            </SubscriptionProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

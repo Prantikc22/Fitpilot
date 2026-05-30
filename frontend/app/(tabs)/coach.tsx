@@ -16,11 +16,12 @@ import { Send, Sparkles, Sun, Moon, Flame, Target, Trophy } from "lucide-react-n
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme, lightColors } from "@/src/contexts/ThemeContext";
 import { supabase } from "@/src/lib/supabase";
 import { api } from "@/src/lib/api";
 import { MarkdownText } from "@/src/components/MarkdownText";
 import { Card } from "@/src/components/Card";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { fonts, radius } from "@/src/lib/theme";
 import { useRouter } from "expo-router";
 import { UtensilsCrossed, CheckCircle } from "lucide-react-native";
 
@@ -31,6 +32,12 @@ const QUICK_MORNING = [
   "Plan my day 🌅",
   "What to eat today?",
   "Motivate me!",
+];
+
+const QUICK_LUNCH = [
+  "Log my lunch 🍽️",
+  "Healthy options?",
+  "How am I doing?",
 ];
 
 const QUICK_EVENING = [
@@ -45,15 +52,41 @@ const QUICK_ANYTIME = [
   "Water check 💧",
 ];
 
+// Proactive AI Accountability Reminders
+const PROACTIVE_REMINDERS = {
+  morning: {
+    icon: "🌅",
+    title: "Set your intention",
+    message: "Plan 3 wins for today. What's your #1 food goal?",
+    cta: "Plan my day",
+    secondary: "Skip planning",
+  },
+  lunch: {
+    icon: "🍽️",
+    title: "Mid-day check",
+    message: "How's your eating going? Still on track?",
+    cta: "Log my lunch",
+    secondary: "I'm on track",
+  },
+  evening: {
+    icon: "🌙",
+    title: "Evening reflection",
+    message: "Let's review your wins & learnings today.",
+    cta: "Review my day",
+    secondary: "Skip review",
+  },
+};
+
 function startOfDayISO() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
 }
 
-function getTimeOfDay(): "morning" | "evening" | "anytime" {
+function getTimeOfDay(): "morning" | "lunch" | "evening" | "anytime" {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 5 && hour < 11) return "morning";
+  if (hour >= 11 && hour < 14) return "lunch";
   if (hour >= 17 && hour < 22) return "evening";
   return "anytime";
 }
@@ -61,6 +94,7 @@ function getTimeOfDay(): "morning" | "evening" | "anytime" {
 export default function Coach() {
   const router = useRouter();
   const { session, profile } = useAuth();
+  const { colors } = useTheme();
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -71,6 +105,7 @@ export default function Coach() {
   const timeOfDay = getTimeOfDay();
   const quickPrompts = 
     timeOfDay === "morning" ? QUICK_MORNING :
+    timeOfDay === "lunch" ? QUICK_LUNCH :
     timeOfDay === "evening" ? QUICK_EVENING :
     QUICK_ANYTIME;
 
@@ -194,9 +229,10 @@ export default function Coach() {
     }
   };
 
-  const TimeIcon = timeOfDay === "morning" ? Sun : timeOfDay === "evening" ? Moon : Sparkles;
+  const TimeIcon = timeOfDay === "morning" ? Sun : timeOfDay === "evening" ? Moon : timeOfDay === "lunch" ? UtensilsCrossed : Sparkles;
   const greeting = 
     timeOfDay === "morning" ? "Good morning" :
+    timeOfDay === "lunch" ? "Lunchtime" :
     timeOfDay === "evening" ? "Good evening" :
     "Hey there";
 
@@ -215,7 +251,7 @@ export default function Coach() {
         <Animated.View entering={FadeInDown.duration(400)}>
           <Pressable
             style={styles.checkinBanner}
-            onPress={() => send(timeOfDay === "morning" ? "Plan my day" : "Review my day")}
+            onPress={() => send(timeOfDay === "morning" ? "Plan my day" : timeOfDay === "lunch" ? "Log my lunch" : "Review my day")}
           >
             <View style={styles.checkinIcon}>
               <TimeIcon color={colors.brand} size={20} />
@@ -225,6 +261,8 @@ export default function Coach() {
               <Text style={styles.checkinSub}>
                 {timeOfDay === "morning"
                   ? "Tap to plan your day with AI"
+                  : timeOfDay === "lunch"
+                  ? "How's your day going? Check in!"
                   : timeOfDay === "evening"
                   ? "Tap to review your progress"
                   : "Quick chat with your coach"}
@@ -294,6 +332,7 @@ export default function Coach() {
         <View style={styles.quickSection}>
           <Text style={styles.quickLabel}>
             {timeOfDay === "morning" ? "🌅 Morning check-in" : 
+             timeOfDay === "lunch" ? "🍽️ Mid-day check" :
              timeOfDay === "evening" ? "🌙 Evening review" : 
              "💬 Quick questions"}
           </Text>
@@ -328,17 +367,17 @@ export default function Coach() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1, backgroundColor: lightColors.bg },
   header: { padding: 20, paddingBottom: 8 },
   brandWrap: { flexDirection: "row", alignItems: "center", gap: 8 },
-  brand: { fontFamily: fonts.headingExt, fontSize: 24, color: colors.text, letterSpacing: -0.6 },
-  subtitle: { fontFamily: fonts.body, color: colors.textMute, fontSize: 14, marginTop: 4 },
+  brand: { fontFamily: fonts.headingExt, fontSize: 24, color: lightColors.text, letterSpacing: -0.6 },
+  subtitle: { fontFamily: fonts.body, color: lightColors.textMute, fontSize: 14, marginTop: 4 },
   
   // Check-in Banner
   checkinBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.brandLight,
+    backgroundColor: lightColors.brandLight,
     marginHorizontal: 20,
     marginBottom: 8,
     padding: 14,
@@ -353,8 +392,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  checkinTitle: { fontFamily: fonts.headingExt, fontSize: 16, color: colors.text },
-  checkinSub: { fontFamily: fonts.body, fontSize: 13, color: colors.textMute, marginTop: 2 },
+  checkinTitle: { fontFamily: fonts.headingExt, fontSize: 16, color: lightColors.text },
+  checkinSub: { fontFamily: fonts.body, fontSize: 13, color: lightColors.textMute, marginTop: 2 },
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -378,7 +417,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  statText: { fontFamily: fonts.bodyMed, fontSize: 12, color: colors.textMute },
+  statText: { fontFamily: fonts.bodyMed, fontSize: 12, color: lightColors.textMute },
 
   list: { padding: 16, gap: 10 },
   emptyWrap: { padding: 24, alignItems: "center" },
@@ -386,48 +425,48 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.brandLight,
+    backgroundColor: lightColors.brandLight,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
-  emptyTitle: { fontFamily: fonts.headingExt, fontSize: 20, color: colors.text, textAlign: "center" },
-  emptySub: { fontFamily: fonts.body, color: colors.textMute, marginTop: 8, textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontFamily: fonts.headingExt, fontSize: 20, color: lightColors.text, textAlign: "center" },
+  emptySub: { fontFamily: fonts.body, color: lightColors.textMute, marginTop: 8, textAlign: "center", lineHeight: 20 },
   bubble: { padding: 12, borderRadius: 18, maxWidth: "85%", marginBottom: 6 },
-  bubbleUser: { alignSelf: "flex-end", backgroundColor: colors.brand, borderBottomRightRadius: 6 },
-  bubbleAI: { alignSelf: "flex-start", backgroundColor: colors.brandLight, borderBottomLeftRadius: 6 },
-  bubbleText: { fontFamily: fonts.body, fontSize: 15, color: colors.text, lineHeight: 22 },
+  bubbleUser: { alignSelf: "flex-end", backgroundColor: lightColors.brand, borderBottomRightRadius: 6 },
+  bubbleAI: { alignSelf: "flex-start", backgroundColor: lightColors.brandLight, borderBottomLeftRadius: 6 },
+  bubbleText: { fontFamily: fonts.body, fontSize: 15, color: lightColors.text, lineHeight: 22 },
   
   // Quick Section
   quickSection: { paddingHorizontal: 16, paddingBottom: 8 },
-  quickLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.textMute, marginBottom: 8 },
+  quickLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: lightColors.textMute, marginBottom: 8 },
   quickRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   quick: {
-    backgroundColor: colors.bgAlt,
+    backgroundColor: lightColors.bgAlt,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: lightColors.border,
   },
-  quickText: { fontFamily: fonts.bodyMed, color: colors.text, fontSize: 13 },
+  quickText: { fontFamily: fonts.bodyMed, color: lightColors.text, fontSize: 13 },
   
   inputRow: { flexDirection: "row", padding: 12, gap: 10, alignItems: "flex-end" },
   input: {
     flex: 1,
-    backgroundColor: colors.bgAlt,
+    backgroundColor: lightColors.bgAlt,
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontFamily: fonts.body,
-    color: colors.text,
+    color: lightColors.text,
     fontSize: 15,
     maxHeight: 120,
-    borderColor: colors.border,
+    borderColor: lightColors.border,
     borderWidth: 1,
   },
   send: {
-    backgroundColor: colors.brand,
+    backgroundColor: lightColors.brand,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -443,7 +482,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingVertical: 12,
     borderRadius: 999,
-    backgroundColor: colors.brandLight,
+    backgroundColor: lightColors.brandLight,
   },
-  dietBtnText: { fontFamily: fonts.bodySemi, color: colors.brand, fontSize: 14 },
+  dietBtnText: { fontFamily: fonts.bodySemi, color: lightColors.brand, fontSize: 14 },
 });

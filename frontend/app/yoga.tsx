@@ -10,6 +10,7 @@ import { Card } from "@/src/components/Card";
 import { ProLockCard } from "@/src/components/ProLockCard";
 import { Button } from "@/src/components/Button";
 import { BreathingTimer } from "@/src/components/BreathingTimer";
+import { YogaPoseTimer } from "@/src/components/YogaPoseTimer";
 import { colors, fonts, radius } from "@/src/lib/theme";
 
 const SEQUENCES = [
@@ -94,6 +95,7 @@ export default function Yoga() {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showBreathing, setShowBreathing] = useState(false);
+  const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
 
   const celebrationScale = useSharedValue(1);
 
@@ -385,6 +387,21 @@ export default function Yoga() {
                     <Text style={styles.instructionTitle}>Follow these poses in order</Text>
                   </View>
                   
+                  {/* Start Guided Flow Button */}
+                  <Pressable 
+                    style={styles.guidedFlowBtn} 
+                    onPress={() => setActiveFlowId(s.id)}
+                    testID={`start-flow-${s.id}`}
+                  >
+                    <View style={styles.guidedFlowIcon}>
+                      <Play color="#fff" size={20} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.guidedFlowTitle}>Start Guided Flow</Text>
+                      <Text style={styles.guidedFlowDesc}>Visual timer • Breathing cues • Auto-advance</Text>
+                    </View>
+                  </Pressable>
+                  
                   {s.poses.map((p, i) => (
                     <View key={i} style={styles.poseRow}>
                       <View style={styles.poseNum}>
@@ -400,10 +417,11 @@ export default function Yoga() {
                   
                   {!done && (
                     <Button
-                      title={loading ? "Saving..." : "✓ Mark as Done"}
+                      title={loading ? "Saving..." : "✓ Mark as Done (Manual)"}
                       onPress={() => markAsDone(s.id)}
                       disabled={loading}
                       style={{ marginTop: 16 }}
+                      variant="secondary"
                       testID={`mark-done-${s.id}`}
                     />
                   )}
@@ -455,6 +473,17 @@ export default function Yoga() {
       </ScrollView>
 
       <BreathingTimer visible={showBreathing} onClose={() => setShowBreathing(false)} />
+      
+      <YogaPoseTimer 
+        visible={activeFlowId !== null}
+        onClose={() => setActiveFlowId(null)}
+        sequence={SEQUENCES.find(s => s.id === activeFlowId) || null}
+        onComplete={() => {
+          if (activeFlowId) {
+            markAsDone(activeFlowId);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -521,6 +550,37 @@ const styles = StyleSheet.create({
   poseList: { backgroundColor: colors.bgAlt, borderRadius: 18, padding: 14, marginTop: 8, borderWidth: 1, borderColor: colors.border },
   instructionHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   instructionTitle: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.brand },
+  
+  // Guided Flow Button
+  guidedFlowBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.brand,
+    padding: 14,
+    borderRadius: radius.lg,
+    marginBottom: 16,
+    gap: 12,
+  },
+  guidedFlowIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  guidedFlowTitle: {
+    fontFamily: fonts.headingExt,
+    fontSize: 16,
+    color: "#fff",
+  },
+  guidedFlowDesc: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 2,
+  },
+  
   poseRow: { flexDirection: "row", paddingVertical: 10, gap: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
   poseNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.brandLight, alignItems: "center", justifyContent: "center" },
   poseNumText: { fontFamily: fonts.headingExt, color: colors.brand, fontSize: 13 },
