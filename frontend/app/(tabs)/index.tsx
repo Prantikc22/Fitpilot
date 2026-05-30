@@ -244,9 +244,9 @@ export default function Home() {
           <Card style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
             <HealthScoreGauge value={score} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.cardLabel}>Today · tap for details</Text>
-              <Text style={styles.cardTitle}>Health Score</Text>
-              <Text style={styles.cardSub}>
+              <Text style={[styles.cardLabel, { color: colors.textMute }]}>Today · tap for details</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Health Score</Text>
+              <Text style={[styles.cardSub, { color: colors.textMute }]}>
                 Calorie + protein adherence, hydration, steps, exercise and weight trend.
               </Text>
             </View>
@@ -301,7 +301,7 @@ export default function Home() {
         </View>
 
         <Card style={{ marginTop: 16 }} testID="macros-card">
-          <Text style={styles.cardTitle}>Today's intake</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Today's intake</Text>
           <MetricRow
             label="Calories"
             value={todayCals}
@@ -338,16 +338,16 @@ export default function Home() {
         <Card style={{ marginTop: 16 }} testID="water-card">
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <View>
-              <Text style={styles.cardLabel}>Hydration</Text>
-              <Text style={styles.cardTitle}>{habit?.water_ml || 0} ml today</Text>
-              <Text style={styles.cardSub}>Goal: 2,500 ml</Text>
+              <Text style={[styles.cardLabel, { color: colors.textMute }]}>Hydration</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{habit?.water_ml || 0} ml today</Text>
+              <Text style={[styles.cardSub, { color: colors.textMute }]}>Goal: 2,500 ml</Text>
             </View>
             <View style={{ flexDirection: "row", gap: 8 }}>
-              <Pressable style={styles.waterBtn} onPress={() => bumpWater(250)} testID="water-add-250">
-                <Text style={styles.waterBtnText}>+250</Text>
+              <Pressable style={[styles.waterBtn, { backgroundColor: colors.brandLight }]} onPress={() => bumpWater(250)} testID="water-add-250">
+                <Text style={[styles.waterBtnText, { color: colors.brand }]}>+250</Text>
               </Pressable>
-              <Pressable style={styles.waterBtn} onPress={() => bumpWater(500)} testID="water-add-500">
-                <Text style={styles.waterBtnText}>+500</Text>
+              <Pressable style={[styles.waterBtn, { backgroundColor: colors.brandLight }]} onPress={() => bumpWater(500)} testID="water-add-500">
+                <Text style={[styles.waterBtnText, { color: colors.brand }]}>+500</Text>
               </Pressable>
             </View>
           </View>

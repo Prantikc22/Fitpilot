@@ -2,7 +2,8 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { Trophy, Flame, Target, Heart, Zap, Crown, Star, Award, Medal, CheckCircle } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts, radius } from "@/src/lib/theme";
 
 const BADGES = [
   { id: "first_scan", name: "First Bite", desc: "Log your first meal", icon: Target, color: "#10B981" },
@@ -23,12 +24,14 @@ type Props = {
 };
 
 export function AchievementBadges({ earned, onBadgePress }: Props) {
+  const { colors } = useTheme();
+  
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Trophy color={colors.warning} size={18} />
-        <Text style={styles.title}>Achievements</Text>
-        <Text style={styles.count}>{earned.length}/{BADGES.length}</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Achievements</Text>
+        <Text style={[styles.count, { color: colors.textMute }]}>{earned.length}/{BADGES.length}</Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {BADGES.map((badge, i) => {
@@ -43,11 +46,11 @@ export function AchievementBadges({ earned, onBadgePress }: Props) {
                 <View style={[styles.iconWrap, { backgroundColor: isEarned ? badge.color + "20" : colors.bgAlt }]}>
                   <Icon color={isEarned ? badge.color : colors.textDim} size={22} />
                 </View>
-                <Text style={[styles.badgeName, !isEarned && styles.badgeNameLocked]}>
+                <Text style={[styles.badgeName, { color: isEarned ? colors.text : colors.textMute }]}>
                   {badge.name}
                 </Text>
                 {isEarned && (
-                  <View style={styles.earnedDot}>
+                  <View style={[styles.earnedDot, { backgroundColor: colors.success }]}>
                     <CheckCircle color="#fff" size={10} />
                   </View>
                 )}
@@ -61,6 +64,7 @@ export function AchievementBadges({ earned, onBadgePress }: Props) {
 }
 
 export function BadgeDetail({ badgeId }: { badgeId: string }) {
+  const { colors } = useTheme();
   const badge = BADGES.find(b => b.id === badgeId);
   if (!badge) return null;
   const Icon = badge.icon;
@@ -70,8 +74,8 @@ export function BadgeDetail({ badgeId }: { badgeId: string }) {
       <View style={[styles.detailIcon, { backgroundColor: badge.color + "20" }]}>
         <Icon color={badge.color} size={32} />
       </View>
-      <Text style={styles.detailName}>{badge.name}</Text>
-      <Text style={styles.detailDesc}>{badge.desc}</Text>
+      <Text style={[styles.detailName, { color: colors.text }]}>{badge.name}</Text>
+      <Text style={[styles.detailDesc, { color: colors.textMute }]}>{badge.desc}</Text>
     </View>
   );
 }
@@ -90,13 +94,11 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headingExt,
     fontSize: 18,
-    color: colors.text,
     flex: 1,
   },
   count: {
     fontFamily: fonts.bodySemi,
     fontSize: 13,
-    color: colors.textMute,
   },
   scroll: {
     paddingHorizontal: 0,
@@ -119,12 +121,8 @@ const styles = StyleSheet.create({
   badgeName: {
     fontFamily: fonts.bodyMed,
     fontSize: 11,
-    color: colors.text,
     textAlign: "center",
     marginTop: 6,
-  },
-  badgeNameLocked: {
-    color: colors.textMute,
   },
   earnedDot: {
     position: "absolute",
@@ -133,7 +131,6 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.success,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -152,12 +149,10 @@ const styles = StyleSheet.create({
   detailName: {
     fontFamily: fonts.headingExt,
     fontSize: 20,
-    color: colors.text,
   },
   detailDesc: {
     fontFamily: fonts.body,
     fontSize: 14,
-    color: colors.textMute,
     marginTop: 4,
   },
 });

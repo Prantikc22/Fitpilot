@@ -1,9 +1,11 @@
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
-import { colors, fonts } from "@/src/lib/theme";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts } from "@/src/lib/theme";
 
 export function HealthScoreGauge({ value, label = "Health Score" }: { value: number; label?: string }) {
+  const { colors } = useTheme();
   const v = Math.max(0, Math.min(100, value || 0));
   const size = 140;
   const stroke = 12;
@@ -14,7 +16,7 @@ export function HealthScoreGauge({ value, label = "Health Score" }: { value: num
     if (v >= 75) return colors.success;
     if (v >= 50) return colors.warning;
     return colors.terracotta;
-  }, [v]);
+  }, [v, colors]);
 
   return (
     <View style={styles.wrap}>
@@ -34,10 +36,10 @@ export function HealthScoreGauge({ value, label = "Health Score" }: { value: num
         />
       </Svg>
       <View style={styles.center} pointerEvents="none">
-        <Text style={styles.value} testID="health-score-value">
+        <Text style={[styles.value, { color: colors.text }]} testID="health-score-value">
           {v}
         </Text>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: colors.textMute }]}>{label}</Text>
       </View>
     </View>
   );
@@ -46,6 +48,6 @@ export function HealthScoreGauge({ value, label = "Health Score" }: { value: num
 const styles = StyleSheet.create({
   wrap: { width: 140, height: 140, alignItems: "center", justifyContent: "center" },
   center: { position: "absolute", alignItems: "center", justifyContent: "center" },
-  value: { fontFamily: fonts.headingExt, fontSize: 36, color: colors.text, letterSpacing: -1 },
-  label: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.6 },
+  value: { fontFamily: fonts.headingExt, fontSize: 36, letterSpacing: -1 },
+  label: { fontFamily: fonts.bodyMed, fontSize: 11, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.6 },
 });

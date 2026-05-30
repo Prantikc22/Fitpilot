@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop, Line, G } from "react-native-svg";
 import Animated, { 
   useSharedValue, 
-  useAnimatedProps, 
   withTiming, 
   withDelay,
   withSpring,
@@ -13,25 +12,22 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
 } from "react-native-reanimated";
-import { colors, fonts } from "@/src/lib/theme";
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts } from "@/src/lib/theme";
 
 export type Point = { date: string; weight: number };
 
 export function WeightChart({ points, height = 180, goal }: { points: Point[]; height?: number; goal?: number | null }) {
+  const { colors } = useTheme();
   const w = 320;
   const padX = 40;
   const padY = 28;
   
-  // Animation values
   const pathProgress = useSharedValue(0);
   const dotsOpacity = useSharedValue(0);
   const chartScale = useSharedValue(0.95);
 
   useEffect(() => {
-    // Reset and animate
     pathProgress.value = 0;
     dotsOpacity.value = 0;
     chartScale.value = 0.95;
@@ -49,7 +45,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
   const { path, dots, minV, maxV, areaPath, yLabels } = useMemo(() => {
     if (!points.length) return { path: "", dots: [], minV: 0, maxV: 0, areaPath: "", yLabels: [] };
     
-    // Filter out invalid points
     const validPoints = points.filter(p => p.weight > 0 && !isNaN(p.weight));
     if (!validPoints.length) return { path: "", dots: [], minV: 0, maxV: 0, areaPath: "", yLabels: [] };
     
@@ -62,32 +57,26 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
       max = Math.max(max, goal);
     }
     
-    // CRITICAL FIX: Better Y-axis scaling to prevent straight line
     const range = max - min;
     
     if (range < 0.5) {
-      // Very small range - expand significantly to show variation
       const mid = (max + min) / 2;
       min = mid - 2;
       max = mid + 2;
     } else if (range < 2) {
-      // Small range - expand to at least 4kg visible
       const mid = (max + min) / 2;
       min = mid - 2;
       max = mid + 2;
     } else if (range < 5) {
-      // Medium range - add 20% padding
       const padding = range * 0.25;
       min -= padding;
       max += padding;
     } else {
-      // Large range - add 10% padding
       const padding = range * 0.15;
       min -= padding;
       max += padding;
     }
     
-    // Round to nice values
     min = Math.floor(min * 2) / 2;
     max = Math.ceil(max * 2) / 2;
     
@@ -96,20 +85,15 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
     const yScale = (v: number) => padY + (height - padY * 2) * (1 - (v - min) / finalRange);
     const coords = validPoints.map((p, i) => ({ x: padX + xStep * i, y: yScale(p.weight), weight: p.weight, date: p.date }));
     
-    // Create smooth curved path using bezier curves
     let d = "";
     if (coords.length === 1) {
-      // Single point - just show a dot, no path
       d = "";
     } else {
-      // Use catmull-rom to bezier conversion for smooth curves
       d = coords
         .map((c, i) => {
           if (i === 0) return `M${c.x.toFixed(1)},${c.y.toFixed(1)}`;
           
           const prev = coords[i - 1];
-          
-          // Simple smooth line with control points
           const cpX = (prev.x + c.x) / 2;
           const cpY1 = prev.y;
           const cpY2 = c.y;
@@ -119,7 +103,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
         .join(" ");
     }
     
-    // Create area path for gradient fill
     let area = "";
     if (coords.length > 1) {
       const lastCoord = coords[coords.length - 1];
@@ -127,7 +110,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
       area = d + ` L${lastCoord.x.toFixed(1)},${height - padY} L${firstCoord.x.toFixed(1)},${height - padY} Z`;
     }
     
-    // Generate Y-axis labels (3-4 labels)
     const labelCount = 4;
     const labels: { value: number; y: number }[] = [];
     for (let i = 0; i < labelCount; i++) {
@@ -140,9 +122,9 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
 
   if (!points.length || !dots.length) {
     return (
-      <Animated.View entering={FadeIn.duration(300)} style={[styles.empty, { height }]}>
-        <Text style={styles.emptyText}>Log your weight to see your trend</Text>
-        <Text style={styles.emptyHint}>Tap Profile → Log Weight to start tracking</Text>
+      <Animated.View entering={FadeIn.duration(300)} style={[styles.empty, { height, backgroundColor: colors.bgWarm }]}>
+        <Text style={[styles.emptyText, { color: colors.textMute }]}>Log your weight to see your trend</Text>
+        <Text style={[styles.emptyHint, { color: colors.textDim }]}>Tap Profile → Log Weight to start tracking</Text>
       </Animated.View>
     );
   }
@@ -152,7 +134,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
       ? padY + (height - padY * 2) * (1 - (goal - minV) / (maxV - minV))
       : null;
 
-  // Calculate weight change for display
   const weightChange = dots.length > 1 
     ? dots[dots.length - 1].weight - dots[0].weight 
     : 0;
@@ -175,7 +156,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
           </LinearGradient>
         </Defs>
         
-        {/* Y-axis labels and grid lines */}
         <G opacity={0.4}>
           {yLabels.map((label, i) => (
             <G key={i}>
@@ -192,7 +172,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
           ))}
         </G>
         
-        {/* Goal line */}
         {goalY != null && goalY > padY && goalY < height - padY && (
           <G>
             <Path 
@@ -205,7 +184,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
           </G>
         )}
         
-        {/* Area fill under the line */}
         {areaPath && (
           <Path 
             d={areaPath} 
@@ -213,7 +191,6 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
           />
         )}
         
-        {/* Main line */}
         {path && (
           <Path 
             d={path} 
@@ -225,10 +202,8 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
           />
         )}
         
-        {/* Data points */}
         {dots.map((d, i) => (
           <G key={i}>
-            {/* Outer glow for last point */}
             {i === dots.length - 1 && (
               <Circle 
                 cx={d.x} 
@@ -242,7 +217,7 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
               cx={d.x} 
               cy={d.y} 
               r={i === dots.length - 1 ? 7 : 4} 
-              fill={i === dots.length - 1 ? colors.brand : "#fff"}
+              fill={i === dots.length - 1 ? colors.brand : colors.bg}
               stroke={colors.brand}
               strokeWidth={i === dots.length - 1 ? 3 : 2}
             />
@@ -250,34 +225,32 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
         ))}
       </Svg>
       
-      {/* Y-axis labels */}
       <View style={styles.yAxisLabels}>
         {yLabels.map((label, i) => (
-          <Text key={i} style={[styles.yLabel, { top: label.y - 6 }]}>
+          <Text key={i} style={[styles.yLabel, { top: label.y - 6, color: colors.textMute }]}>
             {label.value.toFixed(1)}
           </Text>
         ))}
       </View>
       
-      {/* Stats footer */}
-      <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.statsRow}>
+      <Animated.View entering={FadeInDown.delay(300).springify()} style={[styles.statsRow, { borderTopColor: colors.border }]}>
         <View style={styles.stat}>
-          <Text style={styles.statLabel}>Current</Text>
-          <Text style={styles.statValue}>{dots[dots.length - 1]?.weight.toFixed(1)} kg</Text>
+          <Text style={[styles.statLabel, { color: colors.textMute }]}>Current</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{dots[dots.length - 1]?.weight.toFixed(1)} kg</Text>
         </View>
         {goal && (
           <View style={styles.stat}>
-            <Text style={styles.statLabel}>Goal</Text>
+            <Text style={[styles.statLabel, { color: colors.textMute }]}>Goal</Text>
             <Text style={[styles.statValue, { color: colors.terracotta }]}>{goal.toFixed(1)} kg</Text>
           </View>
         )}
         <View style={styles.stat}>
-          <Text style={styles.statLabel}>Change</Text>
+          <Text style={[styles.statLabel, { color: colors.textMute }]}>Change</Text>
           <Text style={[styles.statValue, { color: changeColor }]}>{changeText}</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.statLabel}>Entries</Text>
-          <Text style={styles.statValue}>{dots.length}</Text>
+          <Text style={[styles.statLabel, { color: colors.textMute }]}>Entries</Text>
+          <Text style={[styles.statValue, { color: colors.text }]}>{dots.length}</Text>
         </View>
       </Animated.View>
     </Animated.View>
@@ -285,9 +258,9 @@ export function WeightChart({ points, height = 180, goal }: { points: Point[]; h
 }
 
 const styles = StyleSheet.create({
-  empty: { alignItems: "center", justifyContent: "center", backgroundColor: colors.bgWarm, borderRadius: 16, padding: 20 },
-  emptyText: { fontFamily: fonts.bodySemi, color: colors.textMute, fontSize: 14 },
-  emptyHint: { fontFamily: fonts.body, color: colors.textDim, fontSize: 12, marginTop: 4 },
+  empty: { alignItems: "center", justifyContent: "center", borderRadius: 16, padding: 20 },
+  emptyText: { fontFamily: fonts.bodySemi, fontSize: 14 },
+  emptyHint: { fontFamily: fonts.body, fontSize: 12, marginTop: 4 },
   yAxisLabels: { 
     position: "absolute", 
     left: 0, 
@@ -300,7 +273,6 @@ const styles = StyleSheet.create({
     left: 0,
     fontFamily: fonts.bodyMed, 
     fontSize: 10, 
-    color: colors.textMute,
   },
   statsRow: { 
     flexDirection: "row", 
@@ -308,9 +280,8 @@ const styles = StyleSheet.create({
     marginTop: 12, 
     paddingTop: 12, 
     borderTopWidth: 1, 
-    borderTopColor: colors.border,
   },
   stat: { alignItems: "center" },
-  statLabel: { fontFamily: fonts.bodyMed, fontSize: 10, color: colors.textMute, textTransform: "uppercase", letterSpacing: 0.5 },
-  statValue: { fontFamily: fonts.headingExt, fontSize: 15, color: colors.text, marginTop: 2 },
+  statLabel: { fontFamily: fonts.bodyMed, fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5 },
+  statValue: { fontFamily: fonts.headingExt, fontSize: 15, marginTop: 2 },
 });

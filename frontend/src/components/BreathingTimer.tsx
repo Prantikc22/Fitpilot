@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Pressable, Modal } from "react-native";
 import { X, Play, Pause, RotateCcw } from "lucide-react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming, withRepeat, withSequence, Easing } from "react-native-reanimated";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, Easing } from "react-native-reanimated";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts, radius } from "@/src/lib/theme";
 import * as Haptics from "expo-haptics";
 
 const PATTERNS = [
@@ -26,6 +27,7 @@ type Props = {
 };
 
 export function BreathingTimer({ visible, onClose }: Props) {
+  const { colors } = useTheme();
   const [pattern, setPattern] = useState(PATTERNS[0]);
   const [isActive, setIsActive] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -43,7 +45,6 @@ export function BreathingTimer({ visible, onClose }: Props) {
       return;
     }
     
-    // Animate based on phase
     if (phase === "inhale") {
       scale.value = withTiming(1.4, { duration: pattern.inhale * 1000, easing: Easing.inOut(Easing.ease) });
     } else if (phase === "exhale") {
@@ -55,7 +56,6 @@ export function BreathingTimer({ visible, onClose }: Props) {
     if (!isActive) return;
     
     const runCycle = () => {
-      let elapsed = 0;
       const phases: { phase: Phase; duration: number }[] = [
         { phase: "inhale", duration: pattern.inhale },
         ...(pattern.hold1 > 0 ? [{ phase: "hold1" as Phase, duration: pattern.hold1 }] : []),
@@ -119,9 +119,9 @@ export function BreathingTimer({ visible, onClose }: Props) {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.bg }]}>
         <View style={styles.header}>
-          <Text style={styles.title}>Breathing Exercise</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Breathing Exercise</Text>
           <Pressable onPress={onClose} hitSlop={10}>
             <X size={22} color={colors.text} />
           </Pressable>
@@ -131,46 +131,50 @@ export function BreathingTimer({ visible, onClose }: Props) {
           {PATTERNS.map(p => (
             <Pressable
               key={p.id}
-              style={[styles.patternBtn, pattern.id === p.id && styles.patternBtnActive]}
+              style={[
+                styles.patternBtn, 
+                { backgroundColor: colors.bgAlt },
+                pattern.id === p.id && { borderColor: colors.brand, backgroundColor: colors.brandLight }
+              ]}
               onPress={() => { setPattern(p); reset(); }}
             >
-              <Text style={[styles.patternName, pattern.id === p.id && styles.patternNameActive]}>
+              <Text style={[styles.patternName, { color: pattern.id === p.id ? colors.brand : colors.text }]}>
                 {p.name}
               </Text>
-              <Text style={styles.patternDesc}>{p.desc}</Text>
+              <Text style={[styles.patternDesc, { color: colors.textMute }]}>{p.desc}</Text>
             </Pressable>
           ))}
         </View>
 
         <View style={styles.visualWrap}>
-          <Animated.View style={[styles.circle, circleStyle]}>
-            <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-            {isActive && <Text style={styles.timer}>{timeLeft}s</Text>}
+          <Animated.View style={[styles.circle, circleStyle, { backgroundColor: colors.brandLight, borderColor: colors.brand }]}>
+            <Text style={[styles.phaseLabel, { color: colors.brand }]}>{PHASE_LABELS[phase]}</Text>
+            {isActive && <Text style={[styles.timer, { color: colors.brand }]}>{timeLeft}s</Text>}
           </Animated.View>
         </View>
 
         <View style={styles.stats}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{cycles}</Text>
-            <Text style={styles.statLabel}>Cycles</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{cycles}</Text>
+            <Text style={[styles.statLabel, { color: colors.textMute }]}>Cycles</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{totalCycleTime}s</Text>
-            <Text style={styles.statLabel}>Per cycle</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{totalCycleTime}s</Text>
+            <Text style={[styles.statLabel, { color: colors.textMute }]}>Per cycle</Text>
           </View>
         </View>
 
         <View style={styles.controls}>
-          <Pressable style={styles.resetBtn} onPress={reset}>
+          <Pressable style={[styles.resetBtn, { backgroundColor: colors.bgAlt }]} onPress={reset}>
             <RotateCcw color={colors.textMute} size={20} />
           </Pressable>
-          <Pressable style={styles.playBtn} onPress={toggleActive}>
+          <Pressable style={[styles.playBtn, { backgroundColor: colors.brand }]} onPress={toggleActive}>
             {isActive ? <Pause color="#fff" size={28} /> : <Play color="#fff" size={28} />}
           </Pressable>
           <View style={{ width: 48 }} />
         </View>
 
-        <Text style={styles.hint}>
+        <Text style={[styles.hint, { color: colors.textMute }]}>
           Find a comfortable position. Follow the expanding circle as you breathe.
         </Text>
       </View>
@@ -181,7 +185,6 @@ export function BreathingTimer({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
     padding: 20,
   },
   header: {
@@ -193,7 +196,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headingExt,
     fontSize: 22,
-    color: colors.text,
   },
   patternPicker: {
     flexDirection: "row",
@@ -202,28 +204,18 @@ const styles = StyleSheet.create({
   },
   patternBtn: {
     flex: 1,
-    backgroundColor: colors.bgAlt,
     padding: 12,
     borderRadius: radius.lg,
     borderWidth: 2,
     borderColor: "transparent",
   },
-  patternBtnActive: {
-    borderColor: colors.brand,
-    backgroundColor: colors.brandLight,
-  },
   patternName: {
     fontFamily: fonts.bodySemi,
     fontSize: 13,
-    color: colors.text,
-  },
-  patternNameActive: {
-    color: colors.brand,
   },
   patternDesc: {
     fontFamily: fonts.body,
     fontSize: 11,
-    color: colors.textMute,
     marginTop: 2,
   },
   visualWrap: {
@@ -235,21 +227,17 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: colors.brandLight,
     borderWidth: 4,
-    borderColor: colors.brand,
     alignItems: "center",
     justifyContent: "center",
   },
   phaseLabel: {
     fontFamily: fonts.headingExt,
     fontSize: 20,
-    color: colors.brand,
   },
   timer: {
     fontFamily: fonts.heading,
     fontSize: 48,
-    color: colors.brand,
     marginTop: 8,
   },
   stats: {
@@ -264,12 +252,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontFamily: fonts.headingExt,
     fontSize: 24,
-    color: colors.text,
   },
   statLabel: {
     fontFamily: fonts.body,
     fontSize: 12,
-    color: colors.textMute,
   },
   controls: {
     flexDirection: "row",
@@ -282,7 +268,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: colors.brand,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -290,14 +275,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.bgAlt,
     alignItems: "center",
     justifyContent: "center",
   },
   hint: {
     fontFamily: fonts.body,
     fontSize: 13,
-    color: colors.textMute,
     textAlign: "center",
     lineHeight: 20,
   },

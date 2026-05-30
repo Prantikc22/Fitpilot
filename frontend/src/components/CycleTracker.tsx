@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, Pressable, Modal, ScrollView, Alert } from "react-native";
-import { X, Calendar, Droplets, Sun, Moon, TrendingUp, AlertCircle, CheckCircle } from "lucide-react-native";
+import { X, Calendar, Moon, CheckCircle, AlertCircle } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme } from "@/src/contexts/ThemeContext";
 import { supabase } from "@/src/lib/supabase";
 import { Card } from "@/src/components/Card";
 import { Button } from "@/src/components/Button";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { fonts, radius } from "@/src/lib/theme";
 
 const SYMPTOMS = [
   { id: "cramps", label: "Cramps", icon: "😣" },
@@ -19,20 +20,13 @@ const SYMPTOMS = [
   { id: "breast_tenderness", label: "Tender breasts", icon: "💔" },
 ];
 
-const FLOW_LEVELS = [
-  { id: "none", label: "None", color: colors.bgAlt },
-  { id: "spotting", label: "Spotting", color: "#FFCDD2" },
-  { id: "light", label: "Light", color: "#EF9A9A" },
-  { id: "medium", label: "Medium", color: "#E57373" },
-  { id: "heavy", label: "Heavy", color: "#C62828" },
-];
-
 type Props = {
   visible: boolean;
   onClose: () => void;
 };
 
 export function CycleTracker({ visible, onClose }: Props) {
+  const { colors } = useTheme();
   const { session } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [flow, setFlow] = useState<string>("none");
@@ -42,11 +36,18 @@ export function CycleTracker({ visible, onClose }: Props) {
   const [lastPeriodStart, setLastPeriodStart] = useState<string | null>(null);
   const [cycleLength, setCycleLength] = useState(28);
 
+  const FLOW_LEVELS = [
+    { id: "none", label: "None", color: colors.bgAlt },
+    { id: "spotting", label: "Spotting", color: "#FFCDD2" },
+    { id: "light", label: "Light", color: "#EF9A9A" },
+    { id: "medium", label: "Medium", color: "#E57373" },
+    { id: "heavy", label: "Heavy", color: "#C62828" },
+  ];
+
   const loadData = useCallback(async () => {
     if (!session?.user?.id) return;
     
     try {
-      // Load recent cycle data
       const { data } = await supabase
         .from("cycle_logs")
         .select("*")
@@ -56,15 +57,12 @@ export function CycleTracker({ visible, onClose }: Props) {
       
       if (data) {
         setCycleData(data);
-        
-        // Find last period start
         const periodDays = data.filter((d: any) => d.flow && d.flow !== "none");
         if (periodDays.length > 0) {
           setLastPeriodStart(periodDays[0].date);
         }
       }
       
-      // Load today's entry if exists
       const { data: today } = await supabase
         .from("cycle_logs")
         .select("*")
@@ -80,7 +78,6 @@ export function CycleTracker({ visible, onClose }: Props) {
         setSymptoms([]);
       }
     } catch (error: any) {
-      // Table might not exist
       console.log("Cycle tracker: ", error.message);
     }
   }, [session?.user?.id, selectedDate]);
@@ -118,7 +115,6 @@ export function CycleTracker({ visible, onClose }: Props) {
     }
   };
 
-  // Calculate predictions
   const daysUntilNextPeriod = lastPeriodStart 
     ? Math.max(0, cycleLength - Math.floor((Date.now() - new Date(lastPeriodStart).getTime()) / 86400000))
     : null;
@@ -132,38 +128,35 @@ export function CycleTracker({ visible, onClose }: Props) {
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Cycle Tracker</Text>
+      <View style={[styles.container, { backgroundColor: colors.bg }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Cycle Tracker</Text>
           <Pressable onPress={onClose} hitSlop={10}>
             <X size={22} color={colors.text} />
           </Pressable>
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll}>
-          {/* Cycle Overview */}
           <Card variant="highlight" style={styles.overviewCard}>
             <View style={styles.overviewRow}>
               <View style={styles.overviewItem}>
                 <Moon color={colors.brand} size={20} />
-                <Text style={styles.overviewValue}>{currentPhase}</Text>
-                <Text style={styles.overviewLabel}>Current phase</Text>
+                <Text style={[styles.overviewValue, { color: colors.text }]}>{currentPhase}</Text>
+                <Text style={[styles.overviewLabel, { color: colors.textMute }]}>Current phase</Text>
               </View>
               {daysUntilNextPeriod !== null && (
                 <View style={styles.overviewItem}>
                   <Calendar color={colors.terracotta} size={20} />
-                  <Text style={styles.overviewValue}>{daysUntilNextPeriod}</Text>
-                  <Text style={styles.overviewLabel}>Days until period</Text>
+                  <Text style={[styles.overviewValue, { color: colors.text }]}>{daysUntilNextPeriod}</Text>
+                  <Text style={[styles.overviewLabel, { color: colors.textMute }]}>Days until period</Text>
                 </View>
               )}
             </View>
           </Card>
 
-          {/* Date Selection */}
-          <Text style={styles.sectionTitle}>Log for {selectedDate}</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Log for {selectedDate}</Text>
 
-          {/* Flow Level */}
-          <Text style={styles.label}>Flow level</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Flow level</Text>
           <View style={styles.flowRow}>
             {FLOW_LEVELS.map(level => (
               <Pressable
@@ -171,30 +164,33 @@ export function CycleTracker({ visible, onClose }: Props) {
                 style={[
                   styles.flowBtn,
                   { backgroundColor: level.color },
-                  flow === level.id && styles.flowBtnActive,
+                  flow === level.id && { borderColor: colors.brand },
                 ]}
                 onPress={() => setFlow(level.id)}
               >
-                <Text style={[styles.flowLabel, flow === level.id && styles.flowLabelActive]}>
+                <Text style={[styles.flowLabel, { color: colors.text }, flow === level.id && { color: colors.brand }]}>
                   {level.label}
                 </Text>
               </Pressable>
             ))}
           </View>
 
-          {/* Symptoms */}
-          <Text style={styles.label}>Symptoms</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Symptoms</Text>
           <View style={styles.symptomsGrid}>
             {SYMPTOMS.map((symptom, i) => {
               const selected = symptoms.includes(symptom.id);
               return (
                 <Animated.View key={symptom.id} entering={FadeInDown.delay(i * 30).duration(200)}>
                   <Pressable
-                    style={[styles.symptomBtn, selected && styles.symptomBtnActive]}
+                    style={[
+                      styles.symptomBtn, 
+                      { backgroundColor: colors.bgAlt, borderColor: colors.border },
+                      selected && { backgroundColor: colors.brandLight, borderColor: colors.brand }
+                    ]}
                     onPress={() => toggleSymptom(symptom.id)}
                   >
                     <Text style={styles.symptomIcon}>{symptom.icon}</Text>
-                    <Text style={[styles.symptomLabel, selected && styles.symptomLabelActive]}>
+                    <Text style={[styles.symptomLabel, { color: selected ? colors.brand : colors.text }]}>
                       {symptom.label}
                     </Text>
                     {selected && <CheckCircle color={colors.brand} size={14} />}
@@ -211,13 +207,12 @@ export function CycleTracker({ visible, onClose }: Props) {
             style={{ marginTop: 24 }}
           />
 
-          {/* PCOS Tips */}
           <Card style={{ marginTop: 24 }}>
             <View style={styles.tipsHeader}>
               <AlertCircle color={colors.warning} size={18} />
-              <Text style={styles.tipsTitle}>PCOS/PCOD Tips</Text>
+              <Text style={[styles.tipsTitle, { color: colors.text }]}>PCOS/PCOD Tips</Text>
             </View>
-            <Text style={styles.tipText}>
+            <Text style={[styles.tipText, { color: colors.textMute }]}>
               • Track cycles to identify irregularities{"\n"}
               • Note symptoms to share with your doctor{"\n"}
               • Regular tracking helps manage hormone balance
@@ -232,7 +227,6 @@ export function CycleTracker({ visible, onClose }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: "row",
@@ -240,12 +234,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   title: {
     fontFamily: fonts.headingExt,
     fontSize: 22,
-    color: colors.text,
   },
   scroll: {
     padding: 20,
@@ -265,23 +257,19 @@ const styles = StyleSheet.create({
   overviewValue: {
     fontFamily: fonts.headingExt,
     fontSize: 20,
-    color: colors.text,
   },
   overviewLabel: {
     fontFamily: fonts.body,
     fontSize: 12,
-    color: colors.textMute,
   },
   sectionTitle: {
     fontFamily: fonts.headingExt,
     fontSize: 18,
-    color: colors.text,
     marginBottom: 16,
   },
   label: {
     fontFamily: fonts.bodySemi,
     fontSize: 14,
-    color: colors.text,
     marginBottom: 10,
     marginTop: 16,
   },
@@ -297,17 +285,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "transparent",
   },
-  flowBtnActive: {
-    borderColor: colors.brand,
-  },
   flowLabel: {
     fontFamily: fonts.bodyMed,
     fontSize: 11,
-    color: colors.text,
-  },
-  flowLabelActive: {
-    color: colors.brand,
-    fontFamily: fonts.bodySemi,
   },
   symptomsGrid: {
     flexDirection: "row",
@@ -318,16 +298,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.bgAlt,
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  symptomBtnActive: {
-    backgroundColor: colors.brandLight,
-    borderColor: colors.brand,
   },
   symptomIcon: {
     fontSize: 16,
@@ -335,11 +309,6 @@ const styles = StyleSheet.create({
   symptomLabel: {
     fontFamily: fonts.body,
     fontSize: 13,
-    color: colors.text,
-  },
-  symptomLabelActive: {
-    color: colors.brand,
-    fontFamily: fonts.bodyMed,
   },
   tipsHeader: {
     flexDirection: "row",
@@ -350,12 +319,10 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontFamily: fonts.bodySemi,
     fontSize: 15,
-    color: colors.text,
   },
   tipText: {
     fontFamily: fonts.body,
     fontSize: 13,
-    color: colors.textMute,
     lineHeight: 22,
   },
 });

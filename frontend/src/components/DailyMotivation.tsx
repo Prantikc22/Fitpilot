@@ -2,17 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { 
   FadeIn, 
-  FadeOut, 
   SlideInDown, 
   useAnimatedStyle, 
   useSharedValue, 
   withRepeat, 
   withSequence, 
-  withTiming,
-  withSpring 
+  withTiming
 } from "react-native-reanimated";
-import { X, Flame, Trophy, Star, Target, Zap } from "lucide-react-native";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { X, Flame, Star, Target, Zap } from "lucide-react-native";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts, radius } from "@/src/lib/theme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface DailyMotivationProps {
@@ -39,6 +38,7 @@ const STREAK_REWARDS = [
 ];
 
 export function DailyMotivationModal({ streak, healthScore, userName, onClose }: DailyMotivationProps) {
+  const { colors } = useTheme();
   const [visible, setVisible] = useState(false);
 
   const pulseScale = useSharedValue(1);
@@ -73,7 +73,7 @@ export function DailyMotivationModal({ streak, healthScore, userName, onClose }:
       
       if (lastShown !== today) {
         await AsyncStorage.setItem("lastMotivationShown", today);
-        setTimeout(() => setVisible(true), 1500); // Show after 1.5s on home
+        setTimeout(() => setVisible(true), 1500);
       }
     } catch {
       setVisible(true);
@@ -105,63 +105,59 @@ export function DailyMotivationModal({ streak, healthScore, userName, onClose }:
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={handleClose}>
       <Animated.View entering={FadeIn.duration(300)} style={styles.overlay}>
-        <Animated.View entering={SlideInDown.springify().damping(15)} style={styles.container}>
+        <Animated.View entering={SlideInDown.springify().damping(15)} style={[styles.container, { backgroundColor: colors.bgAlt }]}>
           <Pressable style={styles.closeBtn} onPress={handleClose} hitSlop={10}>
             <X color={colors.textMute} size={20} />
           </Pressable>
 
-          {/* Header with greeting */}
           <View style={styles.header}>
             <Animated.View style={starStyle}>
               <Star color={colors.warning} size={24} fill={colors.warning} />
             </Animated.View>
-            <Text style={styles.greeting}>
+            <Text style={[styles.greeting, { color: colors.text }]}>
               Good {getTimeOfDay()}, {userName || "Champion"}!
             </Text>
           </View>
 
-          {/* Health Score Display */}
-          <Animated.View style={[styles.scoreCircle, pulseStyle]}>
+          <Animated.View style={[styles.scoreCircle, pulseStyle, { backgroundColor: colors.brand }]}>
             <Text style={styles.scoreNum}>{healthScore}</Text>
             <Text style={styles.scoreLabel}>Health Score</Text>
           </Animated.View>
 
-          <Text style={styles.motivation}>
+          <Text style={[styles.motivation, { color: colors.text }]}>
             {motivationMessage.icon} {motivationMessage.message}
           </Text>
 
-          {/* Streak Section */}
           <View style={styles.streakSection}>
-            <View style={styles.streakBadge}>
+            <View style={[styles.streakBadge, { backgroundColor: colors.bg }]}>
               <Flame color={streak > 0 ? "#FF6B35" : colors.textMute} size={28} />
-              <Text style={styles.streakNum}>{streak}</Text>
-              <Text style={styles.streakLabel}>Day Streak</Text>
+              <Text style={[styles.streakNum, { color: colors.text }]}>{streak}</Text>
+              <Text style={[styles.streakLabel, { color: colors.textMute }]}>Day Streak</Text>
             </View>
 
             {currentBadge && (
-              <View style={styles.badge}>
+              <View style={[styles.badge, { backgroundColor: colors.warning + "20" }]}>
                 <Text style={{ fontSize: 24 }}>{currentBadge.emoji}</Text>
-                <Text style={styles.badgeText}>{currentBadge.reward}</Text>
+                <Text style={[styles.badgeText, { color: colors.warning }]}>{currentBadge.reward}</Text>
               </View>
             )}
           </View>
 
           {nextBadge && (
-            <View style={styles.nextGoal}>
+            <View style={[styles.nextGoal, { backgroundColor: colors.brandLight }]}>
               <Target color={colors.brand} size={16} />
-              <Text style={styles.nextGoalText}>
+              <Text style={[styles.nextGoalText, { color: colors.brand }]}>
                 {nextBadge.days - streak} more days to unlock {nextBadge.emoji} {nextBadge.reward}!
               </Text>
             </View>
           )}
 
-          {/* Daily Tips */}
-          <View style={styles.tipCard}>
+          <View style={[styles.tipCard, { backgroundColor: colors.bg }]}>
             <Zap color={colors.warning} size={16} />
-            <Text style={styles.tipText}>{getDailyTip()}</Text>
+            <Text style={[styles.tipText, { color: colors.textMute }]}>{getDailyTip()}</Text>
           </View>
 
-          <Pressable style={styles.ctaBtn} onPress={handleClose}>
+          <Pressable style={[styles.ctaBtn, { backgroundColor: colors.brand }]} onPress={handleClose}>
             <Text style={styles.ctaText}>Let's crush today! 💪</Text>
           </Pressable>
         </Animated.View>
@@ -201,7 +197,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   container: {
-    backgroundColor: colors.bgAlt,
     borderRadius: radius.xl,
     padding: 24,
     width: "100%",
@@ -223,13 +218,11 @@ const styles = StyleSheet.create({
   greeting: {
     fontFamily: fonts.headingExt,
     fontSize: 20,
-    color: colors.text,
   },
   scoreCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: colors.brand,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -249,7 +242,6 @@ const styles = StyleSheet.create({
   motivation: {
     fontFamily: fonts.body,
     fontSize: 15,
-    color: colors.text,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 20,
@@ -263,7 +255,6 @@ const styles = StyleSheet.create({
   },
   streakBadge: {
     alignItems: "center",
-    backgroundColor: colors.bg,
     padding: 16,
     borderRadius: radius.lg,
     minWidth: 90,
@@ -271,18 +262,15 @@ const styles = StyleSheet.create({
   streakNum: {
     fontFamily: fonts.headingExt,
     fontSize: 28,
-    color: colors.text,
     marginTop: 4,
   },
   streakLabel: {
     fontFamily: fonts.bodyMed,
     fontSize: 10,
-    color: colors.textMute,
     textTransform: "uppercase",
   },
   badge: {
     alignItems: "center",
-    backgroundColor: colors.warning + "20",
     padding: 16,
     borderRadius: radius.lg,
     minWidth: 90,
@@ -290,14 +278,12 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: fonts.bodySemi,
     fontSize: 12,
-    color: colors.warning,
     marginTop: 4,
   },
   nextGoal: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: colors.brandLight,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
@@ -306,13 +292,11 @@ const styles = StyleSheet.create({
   nextGoalText: {
     fontFamily: fonts.bodyMed,
     fontSize: 12,
-    color: colors.brand,
   },
   tipCard: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
-    backgroundColor: colors.bg,
     padding: 14,
     borderRadius: radius.md,
     marginBottom: 20,
@@ -321,12 +305,10 @@ const styles = StyleSheet.create({
   tipText: {
     fontFamily: fonts.body,
     fontSize: 13,
-    color: colors.textMute,
     flex: 1,
     lineHeight: 19,
   },
   ctaBtn: {
-    backgroundColor: colors.brand,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 999,

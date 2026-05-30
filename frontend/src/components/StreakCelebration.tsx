@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Modal } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -10,8 +10,9 @@ import Animated, {
   runOnJS,
   Easing,
 } from "react-native-reanimated";
-import { Flame, Star, Trophy, Zap, Crown, PartyPopper, Sparkles } from "lucide-react-native";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { Flame, Star, Trophy, Zap, Crown } from "lucide-react-native";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts, radius } from "@/src/lib/theme";
 
 interface StreakCelebrationProps {
   streak: number;
@@ -22,12 +23,12 @@ interface StreakCelebrationProps {
 const CELEBRATION_EMOJIS = ["🔥", "⭐", "💪", "🎉", "✨", "🏆", "🌟", "💫"];
 
 export function StreakCelebration({ streak, visible, onClose }: StreakCelebrationProps) {
+  const { colors } = useTheme();
   const scale = useSharedValue(0);
   const rotation = useSharedValue(0);
   const opacity = useSharedValue(0);
   const confettiOpacity = useSharedValue(0);
   
-  // Confetti particles
   const particles = Array.from({ length: 12 }, (_, i) => ({
     id: i,
     x: useSharedValue(0),
@@ -39,7 +40,6 @@ export function StreakCelebration({ streak, visible, onClose }: StreakCelebratio
 
   useEffect(() => {
     if (visible) {
-      // Main badge animation
       opacity.value = withTiming(1, { duration: 300 });
       scale.value = withSequence(
         withSpring(1.3, { damping: 8, stiffness: 200 }),
@@ -53,7 +53,6 @@ export function StreakCelebration({ streak, visible, onClose }: StreakCelebratio
         withTiming(0, { duration: 100 })
       );
       
-      // Confetti animation
       confettiOpacity.value = withTiming(1, { duration: 500 });
       particles.forEach((particle, i) => {
         const angle = (i / particles.length) * Math.PI * 2;
@@ -80,7 +79,6 @@ export function StreakCelebration({ streak, visible, onClose }: StreakCelebratio
         );
       });
       
-      // Auto close after 3 seconds
       const timeout = setTimeout(() => {
         handleClose();
       }, 3000);
@@ -132,22 +130,20 @@ export function StreakCelebration({ streak, visible, onClose }: StreakCelebratio
   return (
     <Modal transparent visible={visible} animationType="none">
       <Animated.View style={[styles.overlay, overlayStyle]}>
-        {/* Confetti particles */}
         <Animated.View style={[styles.confettiContainer, confettiStyle]}>
           {particles.map((particle) => (
             <Particle key={particle.id} particle={particle} />
           ))}
         </Animated.View>
 
-        {/* Main celebration badge */}
-        <Animated.View style={[styles.badge, badgeStyle]}>
+        <Animated.View style={[styles.badge, badgeStyle, { backgroundColor: colors.bgAlt }]}>
           <View style={[styles.iconCircle, { backgroundColor: message.color + "30" }]}>
             <IconComponent color={message.color} size={40} />
           </View>
           <Text style={[styles.streakNum, { color: message.color }]}>{streak}</Text>
-          <Text style={styles.dayText}>DAY STREAK</Text>
+          <Text style={[styles.dayText, { color: colors.textMute }]}>DAY STREAK</Text>
           <Text style={[styles.title, { color: message.color }]}>{message.text}</Text>
-          <Text style={styles.subtitle}>{message.subtitle}</Text>
+          <Text style={[styles.subtitle, { color: colors.textMute }]}>{message.subtitle}</Text>
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -190,7 +186,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   badge: {
-    backgroundColor: colors.bgAlt,
     borderRadius: radius.xl,
     padding: 32,
     alignItems: "center",
@@ -216,7 +211,6 @@ const styles = StyleSheet.create({
   dayText: {
     fontFamily: fonts.bodyMed,
     fontSize: 12,
-    color: colors.textMute,
     letterSpacing: 2,
     marginTop: -4,
   },
@@ -228,7 +222,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: fonts.body,
     fontSize: 14,
-    color: colors.textMute,
     marginTop: 4,
   },
 });

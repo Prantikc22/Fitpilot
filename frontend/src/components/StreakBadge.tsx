@@ -1,8 +1,9 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Flame, Trophy, Star, Crown, Zap } from "lucide-react-native";
-import Animated, { useAnimatedStyle, withSpring, useSharedValue, withSequence, withDelay } from "react-native-reanimated";
-import { colors, fonts } from "@/src/lib/theme";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts } from "@/src/lib/theme";
 
 const MILESTONES = [
   { days: 3, label: "Fire Starter", icon: Flame, color: "#FF6B35" },
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export function StreakBadge({ streak, compact = false }: Props) {
+  const { colors } = useTheme();
   const scale = useSharedValue(1);
   
   const currentMilestone = [...MILESTONES].reverse().find(m => streak >= m.days);
@@ -32,7 +34,7 @@ export function StreakBadge({ streak, compact = false }: Props) {
 
   if (compact) {
     return (
-      <View style={styles.compact}>
+      <View style={[styles.compact, { backgroundColor: colors.bgWarm }]}>
         <Flame color={streak > 0 ? "#FF6B35" : colors.textMute} size={16} />
         <Text style={styles.compactText}>{streak}</Text>
       </View>
@@ -45,12 +47,12 @@ export function StreakBadge({ streak, compact = false }: Props) {
         <Icon color={badgeColor} size={28} />
       </View>
       <View style={styles.info}>
-        <Text style={styles.streakNum}>{streak} day streak</Text>
+        <Text style={[styles.streakNum, { color: colors.text }]}>{streak} day streak</Text>
         {currentMilestone && (
           <Text style={[styles.label, { color: badgeColor }]}>{currentMilestone.label}</Text>
         )}
         {nextMilestone && (
-          <Text style={styles.hint}>
+          <Text style={[styles.hint, { color: colors.textMute }]}>
             {nextMilestone.days - streak} days to {nextMilestone.label}
           </Text>
         )}
@@ -78,7 +80,6 @@ const styles = StyleSheet.create({
   streakNum: {
     fontFamily: fonts.headingExt,
     fontSize: 18,
-    color: colors.text,
   },
   label: {
     fontFamily: fonts.bodySemi,
@@ -88,14 +89,12 @@ const styles = StyleSheet.create({
   hint: {
     fontFamily: fonts.body,
     fontSize: 12,
-    color: colors.textMute,
     marginTop: 2,
   },
   compact: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#FFF3E0",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,

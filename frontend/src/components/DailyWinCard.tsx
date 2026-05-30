@@ -1,16 +1,16 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { StyleSheet, Text, View, Pressable } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import Animated, { 
   FadeInDown, 
   useAnimatedStyle, 
   useSharedValue, 
   withRepeat, 
   withSequence, 
-  withTiming,
-  withSpring
+  withTiming
 } from "react-native-reanimated";
-import { Trophy, Sparkles, TrendingUp, Award, Gift, ChevronRight } from "lucide-react-native";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { Trophy, Sparkles, TrendingUp, Award, Gift } from "lucide-react-native";
+import { useTheme } from "@/src/contexts/ThemeContext";
+import { fonts, radius } from "@/src/lib/theme";
 
 interface DailyWinProps {
   todayCalories: number;
@@ -44,6 +44,7 @@ export function DailyWinCard({
   yesterdayCalories,
   yesterdayProtein,
 }: DailyWinProps) {
+  const { colors } = useTheme();
   const [win, setWin] = useState<WinType | null>(null);
   const shimmer = useSharedValue(0);
 
@@ -136,7 +137,7 @@ export function DailyWinCard({
         color: colors.brand,
       });
     }
-  }, [todayCalories, todayProtein, waterMl, steps, exerciseDone, streak]);
+  }, [todayCalories, todayProtein, waterMl, steps, exerciseDone, streak, colors]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
     opacity: 0.3 + shimmer.value * 0.3,
@@ -154,14 +155,14 @@ export function DailyWinCard({
 
   return (
     <Animated.View entering={FadeInDown.delay(200).duration(400)}>
-      <View style={[styles.card, { borderLeftColor: win.color }]}>
-        <Animated.View style={[styles.shimmerOverlay, shimmerStyle]} />
+      <View style={[styles.card, { backgroundColor: colors.bgAlt, borderLeftColor: win.color }]}>
+        <Animated.View style={[styles.shimmerOverlay, shimmerStyle, { backgroundColor: colors.brandLight }]} />
         <View style={[styles.iconWrap, { backgroundColor: win.color + "20" }]}>
           <IconComponent color={win.color} size={22} />
         </View>
         <View style={styles.content}>
-          <Text style={styles.title}>{win.title}</Text>
-          <Text style={styles.description}>{win.description}</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{win.title}</Text>
+          <Text style={[styles.description, { color: colors.textMute }]}>{win.description}</Text>
         </View>
       </View>
     </Animated.View>
@@ -170,7 +171,6 @@ export function DailyWinCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.bgAlt,
     borderRadius: radius.lg,
     padding: 16,
     flexDirection: "row",
@@ -186,7 +186,6 @@ const styles = StyleSheet.create({
   },
   shimmerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.brandLight,
   },
   iconWrap: {
     width: 48,
@@ -201,12 +200,10 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.bodySemi,
     fontSize: 15,
-    color: colors.text,
   },
   description: {
     fontFamily: fonts.body,
     fontSize: 13,
-    color: colors.textMute,
     marginTop: 2,
     lineHeight: 18,
   },
