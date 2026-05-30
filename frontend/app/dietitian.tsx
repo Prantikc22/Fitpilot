@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, MessageCircle, Phone, Calendar, Check, Clock, User } from "lucide-react-native";
+import { X, MessageCircle, Phone, Calendar, Check, Clock } from "lucide-react-native";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/lib/supabase";
@@ -13,44 +13,10 @@ import { colors, fonts, radius } from "@/src/lib/theme";
 
 const SLOTS = ["Tomorrow morning", "Tomorrow evening", "This weekend", "Next week"];
 
-const NUTRITIONISTS = [
-  {
-    id: "dr-priya",
-    name: "Dr. Priya Sharma",
-    title: "Clinical Dietitian",
-    experience: "8 years",
-    specialization: "Weight Management, PCOS",
-    languages: "English, Hindi",
-    rating: 4.9,
-    consultations: 1240,
-  },
-  {
-    id: "dr-anil",
-    name: "Dr. Anil Kapoor",
-    title: "Sports Nutritionist",
-    experience: "12 years",
-    specialization: "Sports Nutrition, Muscle Gain",
-    languages: "English, Hindi, Punjabi",
-    rating: 4.8,
-    consultations: 890,
-  },
-  {
-    id: "dr-meera",
-    name: "Dr. Meera Reddy",
-    title: "Therapeutic Dietitian",
-    experience: "10 years",
-    specialization: "Diabetes, Heart Health",
-    languages: "English, Telugu, Tamil",
-    rating: 4.9,
-    consultations: 1560,
-  },
-];
-
 export default function Dietitian() {
   const router = useRouter();
   const { profile, session } = useAuth();
   const isPro = (profile?.subscription_tier || "free") !== "free";
-  const [selectedNutritionist, setSelectedNutritionist] = useState<string | null>(null);
   const [slot, setSlot] = useState<string>(SLOTS[0]);
   const [topic, setTopic] = useState("");
   const [notes, setNotes] = useState("");
@@ -66,11 +32,10 @@ export default function Dietitian() {
     }
     setSubmitting(true);
     try {
-      const nutritionist = NUTRITIONISTS.find(n => n.id === selectedNutritionist);
       const { data, error } = await supabase.from("dietitian_consults").insert({
         user_id: session.user.id,
         preferred_time: slot,
-        topic: topic.trim() + (nutritionist ? ` (Preferred: ${nutritionist.name})` : ""),
+        topic: topic.trim(),
         notes: notes.trim(),
         status: "pending",
       }).select("id").single();
@@ -84,8 +49,6 @@ export default function Dietitian() {
       setSubmitting(false);
     }
   };
-
-  const selectedExpert = NUTRITIONISTS.find(n => n.id === selectedNutritionist);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -116,13 +79,8 @@ export default function Dietitian() {
                   <Check color="#fff" size={28} />
                 </View>
                 <Text style={styles.successTitle}>Request received</Text>
-                {selectedExpert && (
-                  <Text style={styles.expertConfirm}>
-                    Preferred: {selectedExpert.name}
-                  </Text>
-                )}
                 <Text style={styles.successText}>
-                  Our dietitian will reach out within 24 hours to confirm your {slot.toLowerCase()} consult.
+                  A qualified nutritionist will be assigned and reach out within 24 hours to confirm your {slot.toLowerCase()} consult.
                 </Text>
                 {consultId && (
                   <Text style={styles.consultIdText}>Booking ID: {consultId.slice(0, 8).toUpperCase()}</Text>
@@ -135,10 +93,14 @@ export default function Dietitian() {
                   </View>
                   <View style={styles.stepRow}>
                     <View style={styles.stepNum}><Text style={styles.stepNumText}>2</Text></View>
-                    <Text style={styles.stepText}>You receive confirmed time & phone number</Text>
+                    <Text style={styles.stepText}>A nutritionist will be assigned to you</Text>
                   </View>
                   <View style={styles.stepRow}>
                     <View style={styles.stepNum}><Text style={styles.stepNumText}>3</Text></View>
+                    <Text style={styles.stepText}>You receive confirmed time & phone number</Text>
+                  </View>
+                  <View style={styles.stepRow}>
+                    <View style={styles.stepNum}><Text style={styles.stepNumText}>4</Text></View>
                     <Text style={styles.stepText}>Dietitian calls you at scheduled time</Text>
                   </View>
                 </View>
@@ -159,36 +121,14 @@ export default function Dietitian() {
                 </View>
               </Card>
 
-              <Text style={[styles.label, { marginTop: 20 }]}>Choose a Nutritionist (Optional)</Text>
-              {NUTRITIONISTS.map((expert) => (
-                <Pressable
-                  key={expert.id}
-                  onPress={() => setSelectedNutritionist(selectedNutritionist === expert.id ? null : expert.id)}
-                  style={[
-                    styles.expertCard,
-                    selectedNutritionist === expert.id && styles.expertCardSelected,
-                  ]}
-                >
-                  <View style={styles.expertAvatar}>
-                    <User color={colors.brand} size={20} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.expertName}>{expert.name}</Text>
-                    <Text style={styles.expertTitle}>{expert.title} • {expert.experience}</Text>
-                    <Text style={styles.expertSpec}>{expert.specialization}</Text>
-                    <View style={styles.expertMeta}>
-                      <Text style={styles.expertRating}>⭐ {expert.rating}</Text>
-                      <Text style={styles.expertConsults}>{expert.consultations}+ consults</Text>
-                    </View>
-                  </View>
-                  <View style={[
-                    styles.radioOuter,
-                    selectedNutritionist === expert.id && styles.radioOuterSelected,
-                  ]}>
-                    {selectedNutritionist === expert.id && <View style={styles.radioInner} />}
-                  </View>
-                </Pressable>
-              ))}
+              <Text style={[styles.label, { marginTop: 20 }]}>Our Expert Team</Text>
+              <View style={styles.assignmentNote}>
+                <Clock color={colors.brand} size={18} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.assignmentTitle}>A qualified nutritionist will be assigned</Text>
+                  <Text style={styles.assignmentSub}>Based on your topic and schedule, we'll match you with the best available expert within 24 hours.</Text>
+                </View>
+              </View>
 
               <Text style={[styles.label, { marginTop: 20 }]}>Preferred time</Text>
               <View style={styles.slotRow}>
@@ -344,12 +284,6 @@ const styles = StyleSheet.create({
   
   checkCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.success, alignItems: "center", justifyContent: "center" },
   successTitle: { fontFamily: fonts.headingExt, fontSize: 20, color: colors.text, marginTop: 14 },
-  expertConfirm: {
-    fontFamily: fonts.bodySemi,
-    fontSize: 13,
-    color: colors.brand,
-    marginTop: 6,
-  },
   successText: { fontFamily: fonts.body, color: colors.textMute, textAlign: "center", marginTop: 8, lineHeight: 20 },
   consultIdText: {
     fontFamily: fonts.bodyMed,
@@ -360,6 +294,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
+  },
+  // Assignment note card
+  assignmentNote: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    backgroundColor: colors.brandLight,
+    borderRadius: radius.lg,
+    padding: 16,
+    marginBottom: 12,
+  },
+  assignmentTitle: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 14,
+    color: colors.brand,
+  },
+  assignmentSub: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMute,
+    marginTop: 4,
+    lineHeight: 18,
   },
   nextStepsCard: {
     backgroundColor: colors.bgAlt,

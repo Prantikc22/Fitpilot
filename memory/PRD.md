@@ -14,14 +14,19 @@
 
 ## Features
 - Auth (email/password) + 16-step onboarding with native date picker + 3/6/12-month preset chips, locale-aware date display
-- **Dashboard**: tappable Health Score gauge → modal with full breakdown, **BMI card** with status pill + range bar, daily nutritionist note (markdown-rendered), weight trend chart, calorie + protein progress, water + steps
-- **Health Score**: weighted from calorie adherence (30), protein (25), water (15), steps (15), exercise (10), weight trend (5)
+- **Dashboard**: tappable Health Score gauge → modal with full breakdown + actionable tips per category (+X pts), **BMI card** with status pill + range bar, daily nutritionist note (markdown-rendered), weight trend chart, calorie + protein progress, water + steps
+- **Health Score**: weighted from calorie adherence (30), protein (25), water (15), steps (15), exercise (10), weight trend (5). Modal shows **actionable improvements** like "+10 Log breakfast"
+- **Daily Win Card**: Gamified progress card showing achievements or next actionable step
+- **Streak Celebration**: Animated celebration modal with confetti when user hits 3/7/14/30/60 day streaks
+- **Conditional Cycle Tracker**: PCOS tracker only visible for users with gender="female" in profile
+- **Blood Test Booking**: Prominent card on home screen for ₹999 home collection + AI insights
 - **Food Scan**: OpenAI Vision (camera + library); auto-prompts compress to base64
 - **Meal Log**: add/delete, manual entry, daily meal-plan card
 - **AI Meal Plan**: Pro-gated. Shows **"Your nutritionist is preparing your plan"** 5-step animation while generating (~12s). Rich plan card with meal icons, item pills, prep time, protein chips. **"Ask the nutritionist to improve this plan"** with feedback prompt.
 - **AI Coach** chat with markdown rendering, "View today's meal plan" quick link
+- **AI Coach Note**: Actionable, concise tips (2 sentences max) with loading state animation
 - **Progress**: weight history, 30/60/90 day forecast, habit tracker, AI weekly report (fixed button contrast)
-- **Talk to a Dietitian**: Pro-only consult booking (time slot + topic + notes). Free users see paywall.
+- **Talk to a Dietitian**: Pro-only consult booking (time slot + topic + notes). Provider names hidden - "A nutritionist will be assigned" message shown. Admin assigns expert later. Free users see paywall.
 - **Connect Health**: Apple Health, Google Fit, Fitbit, Garmin (stub UI ready, native sync in dev build)
 - **Food Delivery**: manual Swiggy/Zomato/Blinkit/Zepto/Instamart/UberEats/DoorDash entry → auto-creates food log
 - **Paywall** Free / Premium / Pro with RevenueCat + sandbox fallback

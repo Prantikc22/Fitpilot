@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Camera, Sparkles, Plus, TrendingDown, Flame } from "lucide-react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { Camera, Sparkles, Plus, TrendingDown, Flame, Droplets, ChevronRight, Target, Zap, CheckCircle } from "lucide-react-native";
+import Animated, { FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withSequence, withSpring, withDelay } from "react-native-reanimated";
 
 import { useAuth } from "@/src/contexts/AuthContext";
 import { supabase } from "@/src/lib/supabase";
@@ -18,9 +18,11 @@ import { MarkdownText } from "@/src/components/MarkdownText";
 import { WeightChart, Point } from "@/src/components/WeightChart";
 import { DailyMotivationModal } from "@/src/components/DailyMotivation";
 import { StreakBadge } from "@/src/components/StreakBadge";
+import { StreakCelebration } from "@/src/components/StreakCelebration";
 import { AchievementBadges } from "@/src/components/AchievementBadges";
 import { CycleTracker } from "@/src/components/CycleTracker";
-import { colors, fonts } from "@/src/lib/theme";
+import { DailyWinCard } from "@/src/components/DailyWinCard";
+import { colors, fonts, radius } from "@/src/lib/theme";
 
 function startOfTodayISO() {
   const d = new Date();
@@ -43,8 +45,14 @@ export default function Home() {
   const [scoreBreakdown, setScoreBreakdown] = useState<Record<string, number> | null>(null);
   const [scoreOpen, setScoreOpen] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [prevStreak, setPrevStreak] = useState(0);
   const [showMotivation, setShowMotivation] = useState(true);
   const [showCycleTracker, setShowCycleTracker] = useState(false);
+  const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Determine if user is female (for cycle tracker visibility)
+  const isFemale = profile?.gender?.toLowerCase() === "female";
 
   // Calculate streak from habits
   const loadStreak = useCallback(async () => {
@@ -78,12 +86,17 @@ export default function Home() {
             break;
           }
         }
+        // Check if streak increased - trigger celebration
+        if (currentStreak > prevStreak && currentStreak >= 3) {
+          setShowStreakCelebration(true);
+        }
+        setPrevStreak(currentStreak);
         setStreak(currentStreak);
       }
     } catch (error) {
       console.log("Error loading streak:", error);
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, prevStreak]);
 
   const load = useCallback(async () => {
     if (!session?.user || !profile) return;
@@ -134,6 +147,7 @@ export default function Home() {
     } catch {}
 
     // Generate today's coach note using the freshly-computed numbers
+    setAiLoading(true);
     try {
       const r = await api.coachMessage({
         profile,
@@ -141,7 +155,10 @@ export default function Home() {
         today_protein: pro,
       });
       setAiSummary(r.reply);
-    } catch {}
+    } catch {
+    } finally {
+      setAiLoading(false);
+    }
   }, [session?.user?.id, profile?.daily_calorie_target, profile?.daily_protein_target]);
 
   useFocusEffect(
@@ -234,14 +251,23 @@ export default function Home() {
           </Card>
         </Pressable>
 
-        {aiSummary ? (
-          <Card variant="dark" testID="ai-summary-card" style={{ marginTop: 16 }}>
+        {aiLoading ? (
+          <Card variant="dark" testID="ai-loading-card" style={{ marginTop: 16 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <Sparkles color="#fff" size={16} />
-              <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Today's Coach Note</Text>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Getting your coaching tip...</Text>
             </View>
-            <MarkdownText dark>{aiSummary}</MarkdownText>
           </Card>
+        ) : aiSummary ? (
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <Card variant="dark" testID="ai-summary-card" style={{ marginTop: 16 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <Sparkles color="#fff" size={16} />
+                <Text style={[styles.cardLabel, { color: "rgba(255,255,255,0.7)" }]}>Today's Coach Note</Text>
+              </View>
+              <MarkdownText dark>{aiSummary}</MarkdownText>
+            </Card>
+          </Animated.View>
         ) : null}
 
         <View style={{ marginTop: 16 }}>
@@ -334,15 +360,53 @@ export default function Home() {
             : []}
         />
 
+        {/* Daily Win Card - Gamified encouragement */}
+        <View style={{ marginTop: 16 }}>
+          <DailyWinCard
+            todayCalories={todayCals}
+            todayProtein={todayPro}
+            calorieTarget={profile.daily_calorie_target || 2000}
+            proteinTarget={profile.daily_protein_target || 100}
+            waterMl={habit?.water_ml || 0}
+            steps={habit?.steps || 0}
+            exerciseDone={!!habit?.exercise_done}
+            streak={streak}
+          />
+        </View>
+
+        {/* Blood Test Booking - Prominent CTA Card */}
+        <Animated.View entering={FadeInDown.delay(300).duration(400)}>
+          <Pressable 
+            style={styles.bloodTestCard} 
+            onPress={() => router.push("/blood-tests")}
+            testID="home-blood-test"
+          >
+            <View style={styles.bloodTestIconWrap}>
+              <Droplets color={colors.terracotta} size={24} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bloodTestTitle}>Book Blood Tests</Text>
+              <Text style={styles.bloodTestSub}>Home collection • AI insights • 24hr reports</Text>
+            </View>
+            <View style={styles.bloodTestBadge}>
+              <Text style={styles.bloodTestBadgeText}>₹999</Text>
+            </View>
+            <ChevronRight color={colors.textMute} size={20} />
+          </Pressable>
+        </Animated.View>
+
         <View style={styles.shortcutRow}>
           <Pressable style={styles.shortcut} onPress={() => router.push("/dietitian")} testID="home-dietitian">
             <Text style={styles.shortcutIcon}>👩‍⚕️</Text>
             <Text style={styles.shortcutText}>Talk to a Dietitian</Text>
           </Pressable>
-          <Pressable style={styles.shortcut} onPress={() => setShowCycleTracker(true)} testID="home-cycle">
-            <Text style={styles.shortcutIcon}>🩸</Text>
-            <Text style={styles.shortcutText}>Cycle Tracker</Text>
-          </Pressable>
+          {/* Only show Cycle Tracker for female users */}
+          {isFemale && (
+            <Pressable style={styles.shortcut} onPress={() => setShowCycleTracker(true)} testID="home-cycle">
+              <Text style={styles.shortcutIcon}>🩸</Text>
+              <Text style={styles.shortcutText}>Cycle Tracker</Text>
+            </Pressable>
+          )}
           <Pressable style={styles.shortcut} onPress={() => router.push("/yoga")} testID="home-yoga">
             <Text style={styles.shortcutIcon}>🧘</Text>
             <Text style={styles.shortcutText}>Yoga (Pro)</Text>
@@ -411,10 +475,20 @@ export default function Home() {
         />
       )}
 
-      <CycleTracker
-        visible={showCycleTracker}
-        onClose={() => setShowCycleTracker(false)}
+      {/* Streak Celebration Animation */}
+      <StreakCelebration
+        streak={streak}
+        visible={showStreakCelebration}
+        onClose={() => setShowStreakCelebration(false)}
       />
+
+      {/* Cycle Tracker - only rendered if female */}
+      {isFemale && (
+        <CycleTracker
+          visible={showCycleTracker}
+          onClose={() => setShowCycleTracker(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -465,4 +539,46 @@ const styles = StyleSheet.create({
   shortcut: { flex: 1, backgroundColor: colors.bgAlt, borderRadius: 16, padding: 12, alignItems: "center", gap: 6 },
   shortcutIcon: { fontSize: 22 },
   shortcutText: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textAlign: "center" },
+  // Blood Test Card Styles
+  bloodTestCard: {
+    marginTop: 16,
+    backgroundColor: colors.bgAlt,
+    borderRadius: radius.lg,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: colors.terracotta + "30",
+  },
+  bloodTestIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.terracotta + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bloodTestTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 16,
+    color: colors.text,
+  },
+  bloodTestSub: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMute,
+    marginTop: 2,
+  },
+  bloodTestBadge: {
+    backgroundColor: colors.terracotta + "20",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  bloodTestBadgeText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 12,
+    color: colors.terracotta,
+  },
 });
