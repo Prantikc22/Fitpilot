@@ -237,28 +237,28 @@ export default function Coach() {
     "Hey there";
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <View style={styles.header}>
         <View style={styles.brandWrap}>
           <Sparkles size={18} color={colors.brand} />
-          <Text style={styles.brand}>AI Coach</Text>
+          <Text style={[styles.brand, { color: colors.text }]}>AI Coach</Text>
         </View>
-        <Text style={styles.subtitle}>Quick, actionable advice. Always here.</Text>
+        <Text style={[styles.subtitle, { color: colors.textMute }]}>Quick, actionable advice. Always here.</Text>
       </View>
 
       {/* Check-in Banner */}
       {!checkedIn && msgs.length === 0 && (
         <Animated.View entering={FadeInDown.duration(400)}>
           <Pressable
-            style={styles.checkinBanner}
+            style={[styles.checkinBanner, { backgroundColor: colors.brandLight }]}
             onPress={() => send(timeOfDay === "morning" ? "Plan my day" : timeOfDay === "lunch" ? "Log my lunch" : "Review my day")}
           >
-            <View style={styles.checkinIcon}>
+            <View style={[styles.checkinIcon, { backgroundColor: colors.bgAlt }]}>
               <TimeIcon color={colors.brand} size={20} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.checkinTitle}>{greeting}! 👋</Text>
-              <Text style={styles.checkinSub}>
+              <Text style={[styles.checkinTitle, { color: colors.text }]}>{greeting}! 👋</Text>
+              <Text style={[styles.checkinSub, { color: colors.textMute }]}>
                 {timeOfDay === "morning"
                   ? "Tap to plan your day with AI"
                   : timeOfDay === "lunch"
@@ -283,20 +283,20 @@ export default function Coach() {
         <Animated.View entering={FadeIn.duration(300)} style={styles.statsRow}>
           <View style={styles.statItem}>
             <CheckCircle color={colors.success} size={14} />
-            <Text style={styles.statText}>Checked in</Text>
+            <Text style={[styles.statText, { color: colors.textMute }]}>Checked in</Text>
           </View>
           {streak > 0 && (
             <View style={styles.statItem}>
               <Flame color="#FF6B35" size={14} />
-              <Text style={styles.statText}>{streak} day streak</Text>
+              <Text style={[styles.statText, { color: colors.textMute }]}>{streak} day streak</Text>
             </View>
           )}
         </Animated.View>
       )}
 
-      <Pressable style={styles.dietBtn} onPress={() => router.push("/(tabs)/log")} testID="coach-open-diet">
+      <Pressable style={[styles.dietBtn, { backgroundColor: colors.brandLight }]} onPress={() => router.push("/(tabs)/log")} testID="coach-open-diet">
         <UtensilsCrossed color={colors.brand} size={16} />
-        <Text style={styles.dietBtnText}>View today's meal plan</Text>
+        <Text style={[styles.dietBtnText, { color: colors.brand }]}>View today's meal plan</Text>
       </Pressable>
 
       <FlatList
@@ -306,18 +306,18 @@ export default function Coach() {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
-            <View style={styles.emptyIcon}>
+            <View style={[styles.emptyIcon, { backgroundColor: colors.brandLight }]}>
               <Target color={colors.brand} size={28} />
             </View>
-            <Text style={styles.emptyTitle}>Your AI health coach</Text>
-            <Text style={styles.emptySub}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>Your AI health coach</Text>
+            <Text style={[styles.emptySub, { color: colors.textMute }]}>
               Short answers. Real results.{"\n"}Ask anything about food, fitness, or your plan.
             </Text>
           </View>
         }
         renderItem={({ item }) => (
           <Animated.View entering={FadeInDown.duration(200)}>
-            <View style={[styles.bubble, item.role === "user" ? styles.bubbleUser : styles.bubbleAI]}>
+            <View style={[styles.bubble, item.role === "user" ? [styles.bubbleUser, { backgroundColor: colors.brand }] : [styles.bubbleAI, { backgroundColor: colors.brandLight }]]}>
               {item.role === "user" ? (
                 <Text style={[styles.bubbleText, { color: "#fff" }]}>{item.content}</Text>
               ) : (
@@ -330,7 +330,7 @@ export default function Coach() {
 
       {msgs.length === 0 && (
         <View style={styles.quickSection}>
-          <Text style={styles.quickLabel}>
+          <Text style={[styles.quickLabel, { color: colors.textMute }]}>
             {timeOfDay === "morning" ? "🌅 Morning check-in" : 
              timeOfDay === "lunch" ? "🍽️ Mid-day check" :
              timeOfDay === "evening" ? "🌙 Evening review" : 
@@ -338,8 +338,8 @@ export default function Coach() {
           </Text>
           <View style={styles.quickRow}>
             {quickPrompts.map((q) => (
-              <Pressable key={q} onPress={() => send(q)} style={styles.quick} testID={`quick-${q.slice(0, 6)}`}>
-                <Text style={styles.quickText}>{q}</Text>
+              <Pressable key={q} onPress={() => send(q)} style={[styles.quick, { backgroundColor: colors.bgAlt, borderColor: colors.border }]} testID={`quick-${q.slice(0, 6)}`}>
+                <Text style={[styles.quickText, { color: colors.text }]}>{q}</Text>
               </Pressable>
             ))}
           </View>
@@ -353,11 +353,11 @@ export default function Coach() {
             onChangeText={setText}
             placeholder="Ask me anything…"
             placeholderTextColor={colors.textDim}
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.bgAlt, color: colors.text, borderColor: colors.border }]}
             multiline
             testID="coach-input"
           />
-          <Pressable style={styles.send} onPress={() => send()} disabled={sending} testID="coach-send">
+          <Pressable style={[styles.send, { backgroundColor: colors.brand }]} onPress={() => send()} disabled={sending} testID="coach-send">
             {sending ? <ActivityIndicator color="#fff" /> : <Send color="#fff" size={18} />}
           </Pressable>
         </View>
@@ -367,17 +367,16 @@ export default function Coach() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: lightColors.bg },
+  safe: { flex: 1 },
   header: { padding: 20, paddingBottom: 8 },
   brandWrap: { flexDirection: "row", alignItems: "center", gap: 8 },
-  brand: { fontFamily: fonts.headingExt, fontSize: 24, color: lightColors.text, letterSpacing: -0.6 },
-  subtitle: { fontFamily: fonts.body, color: lightColors.textMute, fontSize: 14, marginTop: 4 },
+  brand: { fontFamily: fonts.headingExt, fontSize: 24, letterSpacing: -0.6 },
+  subtitle: { fontFamily: fonts.body, fontSize: 14, marginTop: 4 },
   
   // Check-in Banner
   checkinBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: lightColors.brandLight,
     marginHorizontal: 20,
     marginBottom: 8,
     padding: 14,
@@ -388,12 +387,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
-  checkinTitle: { fontFamily: fonts.headingExt, fontSize: 16, color: lightColors.text },
-  checkinSub: { fontFamily: fonts.body, fontSize: 13, color: lightColors.textMute, marginTop: 2 },
+  checkinTitle: { fontFamily: fonts.headingExt, fontSize: 16 },
+  checkinSub: { fontFamily: fonts.body, fontSize: 13, marginTop: 2 },
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -417,7 +415,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
-  statText: { fontFamily: fonts.bodyMed, fontSize: 12, color: lightColors.textMute },
+  statText: { fontFamily: fonts.bodyMed, fontSize: 12 },
 
   list: { padding: 16, gap: 10 },
   emptyWrap: { padding: 24, alignItems: "center" },
@@ -425,48 +423,41 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: lightColors.brandLight,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
-  emptyTitle: { fontFamily: fonts.headingExt, fontSize: 20, color: lightColors.text, textAlign: "center" },
-  emptySub: { fontFamily: fonts.body, color: lightColors.textMute, marginTop: 8, textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontFamily: fonts.headingExt, fontSize: 20, textAlign: "center" },
+  emptySub: { fontFamily: fonts.body, marginTop: 8, textAlign: "center", lineHeight: 20 },
   bubble: { padding: 12, borderRadius: 18, maxWidth: "85%", marginBottom: 6 },
-  bubbleUser: { alignSelf: "flex-end", backgroundColor: lightColors.brand, borderBottomRightRadius: 6 },
-  bubbleAI: { alignSelf: "flex-start", backgroundColor: lightColors.brandLight, borderBottomLeftRadius: 6 },
-  bubbleText: { fontFamily: fonts.body, fontSize: 15, color: lightColors.text, lineHeight: 22 },
+  bubbleUser: { alignSelf: "flex-end", borderBottomRightRadius: 6 },
+  bubbleAI: { alignSelf: "flex-start", borderBottomLeftRadius: 6 },
+  bubbleText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   
   // Quick Section
   quickSection: { paddingHorizontal: 16, paddingBottom: 8 },
-  quickLabel: { fontFamily: fonts.bodySemi, fontSize: 12, color: lightColors.textMute, marginBottom: 8 },
+  quickLabel: { fontFamily: fonts.bodySemi, fontSize: 12, marginBottom: 8 },
   quickRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   quick: {
-    backgroundColor: lightColors.bgAlt,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: lightColors.border,
   },
-  quickText: { fontFamily: fonts.bodyMed, color: lightColors.text, fontSize: 13 },
+  quickText: { fontFamily: fonts.bodyMed, fontSize: 13 },
   
   inputRow: { flexDirection: "row", padding: 12, gap: 10, alignItems: "flex-end" },
   input: {
     flex: 1,
-    backgroundColor: lightColors.bgAlt,
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontFamily: fonts.body,
-    color: lightColors.text,
     fontSize: 15,
     maxHeight: 120,
-    borderColor: lightColors.border,
     borderWidth: 1,
   },
   send: {
-    backgroundColor: lightColors.brand,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -482,7 +473,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingVertical: 12,
     borderRadius: 999,
-    backgroundColor: lightColors.brandLight,
   },
-  dietBtnText: { fontFamily: fonts.bodySemi, color: lightColors.brand, fontSize: 14 },
+  dietBtnText: { fontFamily: fonts.bodySemi, fontSize: 14 },
 });

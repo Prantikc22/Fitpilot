@@ -379,50 +379,50 @@ export default function Home() {
         {/* Blood Test Booking - Prominent CTA Card */}
         <Animated.View entering={FadeInDown.delay(300).duration(400)}>
           <Pressable 
-            style={styles.bloodTestCard} 
+            style={[styles.bloodTestCard, { backgroundColor: colors.bgAlt, borderColor: colors.terracotta + "30" }]} 
             onPress={() => router.push("/blood-tests")}
             testID="home-blood-test"
           >
-            <View style={styles.bloodTestIconWrap}>
+            <View style={[styles.bloodTestIconWrap, { backgroundColor: colors.terracotta + "15" }]}>
               <Droplets color={colors.terracotta} size={24} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.bloodTestTitle}>Book Blood Tests</Text>
-              <Text style={styles.bloodTestSub}>Home collection • AI insights • 24hr reports</Text>
+              <Text style={[styles.bloodTestTitle, { color: colors.text }]}>Book Blood Tests</Text>
+              <Text style={[styles.bloodTestSub, { color: colors.textMute }]}>Home collection • AI insights • 24hr reports</Text>
             </View>
-            <View style={styles.bloodTestBadge}>
-              <Text style={styles.bloodTestBadgeText}>₹999</Text>
+            <View style={[styles.bloodTestBadge, { backgroundColor: colors.terracotta + "20" }]}>
+              <Text style={[styles.bloodTestBadgeText, { color: colors.terracotta }]}>₹999</Text>
             </View>
             <ChevronRight color={colors.textMute} size={20} />
           </Pressable>
         </Animated.View>
 
         <View style={styles.shortcutRow}>
-          <Pressable style={styles.shortcut} onPress={() => router.push("/dietitian")} testID="home-dietitian">
+          <Pressable style={[styles.shortcut, { backgroundColor: colors.bgAlt }]} onPress={() => router.push("/dietitian")} testID="home-dietitian">
             <Text style={styles.shortcutIcon}>👩‍⚕️</Text>
-            <Text style={styles.shortcutText}>Talk to a Dietitian</Text>
+            <Text style={[styles.shortcutText, { color: colors.textMute }]}>Talk to a Dietitian</Text>
           </Pressable>
           {/* Only show Cycle Tracker for female users */}
           {isFemale && (
-            <Pressable style={styles.shortcut} onPress={() => setShowCycleTracker(true)} testID="home-cycle">
+            <Pressable style={[styles.shortcut, { backgroundColor: colors.bgAlt }]} onPress={() => setShowCycleTracker(true)} testID="home-cycle">
               <Text style={styles.shortcutIcon}>🩸</Text>
-              <Text style={styles.shortcutText}>Cycle Tracker</Text>
+              <Text style={[styles.shortcutText, { color: colors.textMute }]}>Cycle Tracker</Text>
             </Pressable>
           )}
-          <Pressable style={styles.shortcut} onPress={() => router.push("/yoga")} testID="home-yoga">
+          <Pressable style={[styles.shortcut, { backgroundColor: colors.bgAlt }]} onPress={() => router.push("/yoga")} testID="home-yoga">
             <Text style={styles.shortcutIcon}>🧘</Text>
-            <Text style={styles.shortcutText}>Yoga (Pro)</Text>
+            <Text style={[styles.shortcutText, { color: colors.textMute }]}>Yoga (Pro)</Text>
           </Pressable>
         </View>
 
         <Card style={{ marginTop: 16 }} testID="weight-trend-card">
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
             <TrendingDown color={colors.brand} size={18} />
-            <Text style={styles.cardTitle}>Weight trend</Text>
+            <Text style={[styles.cardTitle, { color: colors.text }]}>Weight trend</Text>
           </View>
           <WeightChart points={weights} goal={profile.goal_weight_kg} />
           {projected && (
-            <Text style={styles.proj}>
+          <Text style={[styles.proj, { color: colors.textMute }]}>
               Projected to reach {profile.goal_weight_kg} kg by {projected.dateStr}
             </Text>
           )}
@@ -451,11 +451,11 @@ export default function Home() {
       </ScrollView>
 
       <View style={styles.fabRow}>
-        <Pressable style={[styles.fab, styles.fabPrimary]} onPress={() => router.push("/scan")} testID="fab-scan">
+        <Pressable style={[styles.fab, styles.fabPrimary, { backgroundColor: colors.brand }]} onPress={() => router.push("/scan")} testID="fab-scan">
           <Camera color="#fff" size={20} />
           <Text style={styles.fabText}>Scan food</Text>
         </Pressable>
-        <Pressable style={[styles.fab, styles.fabSecondary]} onPress={() => router.push("/(tabs)/log")} testID="fab-log">
+        <Pressable style={[styles.fab, styles.fabSecondary, { backgroundColor: colors.bgAlt, borderColor: colors.border }]} onPress={() => router.push("/(tabs)/log")} testID="fab-log">
           <Plus color={colors.brand} size={20} />
           <Text style={[styles.fabText, { color: colors.brand }]}>Log</Text>
         </Pressable>

@@ -5,15 +5,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Droplets, Footprints, Moon, Dumbbell, Plus, Sparkles } from "lucide-react-native";
 
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme, lightColors } from "@/src/contexts/ThemeContext";
 import { supabase } from "@/src/lib/supabase";
 import { api } from "@/src/lib/api";
 import { Card } from "@/src/components/Card";
 import { Button } from "@/src/components/Button";
 import { WeightChart, Point } from "@/src/components/WeightChart";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { fonts, radius } from "@/src/lib/theme";
 
 export default function Progress() {
   const { session, profile } = useAuth();
+  const { colors } = useTheme();
   const [weights, setWeights] = useState<Point[]>([]);
   const [habit, setHabit] = useState<{ water_ml: number; steps: number; sleep_hours: number; exercise_done: boolean }>({
     water_ml: 0,
@@ -117,36 +119,36 @@ export default function Progress() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.h1}>Progress</Text>
+        <Text style={[styles.h1, { color: colors.text }]}>Progress</Text>
 
         <Card style={{ marginTop: 12 }} testID="weight-card">
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text style={styles.h3}>Weight history</Text>
-            <Pressable style={styles.smallBtn} onPress={() => setWeightOpen(true)} testID="add-weight">
+            <Text style={[styles.h3, { color: colors.text }]}>Weight history</Text>
+            <Pressable style={[styles.smallBtn, { backgroundColor: colors.brandLight }]} onPress={() => setWeightOpen(true)} testID="add-weight">
               <Plus color={colors.brand} size={14} />
-              <Text style={styles.smallBtnText}>Log weight</Text>
+              <Text style={[styles.smallBtnText, { color: colors.brand }]}>Log weight</Text>
             </Pressable>
           </View>
           <WeightChart points={weights} goal={profile?.goal_weight_kg} />
         </Card>
 
         <Card style={{ marginTop: 16 }} testID="prediction-card">
-          <Text style={styles.h3}>Forecast</Text>
+          <Text style={[styles.h3, { color: colors.text }]}>Forecast</Text>
           <View style={styles.predRow}>
-            <PredCol label="Today" value={`${lastW.toFixed(1)} kg`} />
-            <PredCol label="30 days" value={`${pred(30).toFixed(1)} kg`} />
-            <PredCol label="60 days" value={`${pred(60).toFixed(1)} kg`} />
-            <PredCol label="90 days" value={`${pred(90).toFixed(1)} kg`} />
+            <PredCol label="Today" value={`${lastW.toFixed(1)} kg`} colors={colors} />
+            <PredCol label="30 days" value={`${pred(30).toFixed(1)} kg`} colors={colors} />
+            <PredCol label="60 days" value={`${pred(60).toFixed(1)} kg`} colors={colors} />
+            <PredCol label="90 days" value={`${pred(90).toFixed(1)} kg`} colors={colors} />
           </View>
-          <Text style={styles.predHint}>
+          <Text style={[styles.predHint, { color: colors.textDim }]}>
             Based on your {aggr} pace target (~{perWeek} kg/week).
           </Text>
         </Card>
 
         <Card style={{ marginTop: 16 }} testID="habits-card">
-          <Text style={styles.h3}>Today's habits</Text>
+          <Text style={[styles.h3, { color: colors.text }]}>Today's habits</Text>
           <HabitRow
             icon={<Droplets color={colors.info} size={18} />}
             label="Water"
@@ -154,6 +156,7 @@ export default function Progress() {
             onMinus={() => upsertHabit({ water_ml: Math.max(0, habit.water_ml - 250) })}
             onPlus={() => upsertHabit({ water_ml: habit.water_ml + 250 })}
             unit="+250"
+            colors={colors}
           />
           <HabitRow
             icon={<Footprints color={colors.success} size={18} />}
@@ -162,6 +165,7 @@ export default function Progress() {
             onMinus={() => upsertHabit({ steps: Math.max(0, habit.steps - 1000) })}
             onPlus={() => upsertHabit({ steps: habit.steps + 1000 })}
             unit="+1k"
+            colors={colors}
           />
           <HabitRow
             icon={<Moon color={colors.terracotta} size={18} />}
@@ -170,14 +174,15 @@ export default function Progress() {
             onMinus={() => upsertHabit({ sleep_hours: Math.max(0, habit.sleep_hours - 0.5) })}
             onPlus={() => upsertHabit({ sleep_hours: habit.sleep_hours + 0.5 })}
             unit="+30m"
+            colors={colors}
           />
           <Pressable
-            style={[styles.exerciseToggle, habit.exercise_done && styles.exerciseDone]}
+            style={[styles.exerciseToggle, { backgroundColor: colors.brandLight }, habit.exercise_done && { backgroundColor: colors.brand }]}
             onPress={() => upsertHabit({ exercise_done: !habit.exercise_done })}
             testID="habit-exercise"
           >
             <Dumbbell color={habit.exercise_done ? "#fff" : colors.brand} size={18} />
-            <Text style={[styles.exerciseText, habit.exercise_done && { color: "#fff" }]}>
+            <Text style={[styles.exerciseText, { color: colors.brand }, habit.exercise_done && { color: "#fff" }]}>
               {habit.exercise_done ? "Exercise done ✓" : "Mark exercise done"}
             </Text>
           </Pressable>
@@ -222,15 +227,15 @@ export default function Progress() {
 
       <Modal visible={weightOpen} transparent animationType="fade" onRequestClose={() => setWeightOpen(false)}>
         <Pressable style={styles.modalBg} onPress={() => setWeightOpen(false)}>
-          <Pressable style={styles.modalCard} onPress={() => {}}>
-            <Text style={styles.h2}>Log weight</Text>
+          <Pressable style={[styles.modalCard, { backgroundColor: colors.bgAlt }]} onPress={() => {}}>
+            <Text style={[styles.h2, { color: colors.text }]}>Log weight</Text>
             <TextInput
               value={weightInput}
               onChangeText={setWeightInput}
               keyboardType="numeric"
               placeholder="kg"
               placeholderTextColor={colors.textDim}
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.bgWarm, color: colors.text }]}
               autoFocus
               testID="weight-input"
             />
@@ -249,6 +254,7 @@ function HabitRow({
   onMinus,
   onPlus,
   unit,
+  colors,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -256,75 +262,72 @@ function HabitRow({
   onMinus: () => void;
   onPlus: () => void;
   unit: string;
+  colors: any;
 }) {
   return (
-    <View style={styles.habitRow}>
+    <View style={[styles.habitRow, { borderBottomColor: colors.border }]}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
         {icon}
-        <Text style={styles.habitLabel}>{label}</Text>
+        <Text style={[styles.habitLabel, { color: colors.text }]}>{label}</Text>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <Text style={styles.habitValue}>{value}</Text>
-        <Pressable onPress={onMinus} style={styles.iconBtn} testID={`habit-${label}-minus`}>
-          <Text style={styles.iconBtnText}>−</Text>
+        <Text style={[styles.habitValue, { color: colors.textMute }]}>{value}</Text>
+        <Pressable onPress={onMinus} style={[styles.iconBtn, { backgroundColor: colors.brandLight }]} testID={`habit-${label}-minus`}>
+          <Text style={[styles.iconBtnText, { color: colors.brand }]}>−</Text>
         </Pressable>
-        <Pressable onPress={onPlus} style={styles.iconBtn} testID={`habit-${label}-plus`}>
-          <Text style={styles.iconBtnText}>+</Text>
+        <Pressable onPress={onPlus} style={[styles.iconBtn, { backgroundColor: colors.brandLight }]} testID={`habit-${label}-plus`}>
+          <Text style={[styles.iconBtnText, { color: colors.brand }]}>+</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
-function PredCol({ label, value }: { label: string; value: string }) {
+function PredCol({ label, value, colors }: { label: string; value: string; colors: any }) {
   return (
     <View style={{ flex: 1 }}>
-      <Text style={styles.predLabel}>{label}</Text>
-      <Text style={styles.predValue}>{value}</Text>
+      <Text style={[styles.predLabel, { color: colors.textMute }]}>{label}</Text>
+      <Text style={[styles.predValue, { color: colors.text }]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1 },
   scroll: { padding: 20 },
-  h1: { fontFamily: fonts.headingExt, fontSize: 28, color: colors.text, letterSpacing: -0.8 },
-  h2: { fontFamily: fonts.headingExt, fontSize: 22, color: colors.text, marginBottom: 8 },
-  h3: { fontFamily: fonts.heading, fontSize: 18, color: colors.text, marginBottom: 8 },
+  h1: { fontFamily: fonts.headingExt, fontSize: 28, letterSpacing: -0.8 },
+  h2: { fontFamily: fonts.headingExt, fontSize: 22, marginBottom: 8 },
+  h3: { fontFamily: fonts.heading, fontSize: 18, marginBottom: 8 },
   label: {
     fontFamily: fonts.bodyMed,
     fontSize: 11,
-    color: colors.textMute,
     textTransform: "uppercase",
     letterSpacing: 0.7,
   },
-  cardSub: { fontFamily: fonts.body, color: colors.textMute, marginTop: 6 },
-  smallBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.brandLight, borderRadius: 999 },
-  smallBtnText: { color: colors.brand, fontFamily: fonts.bodySemi, fontSize: 12 },
+  cardSub: { fontFamily: fonts.body, marginTop: 6 },
+  smallBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  smallBtnText: { fontFamily: fonts.bodySemi, fontSize: 12 },
   predRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8, gap: 8 },
-  predLabel: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.textMute, textTransform: "uppercase" },
-  predValue: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.text, marginTop: 4, letterSpacing: -0.4 },
-  predHint: { fontFamily: fonts.body, color: colors.textDim, marginTop: 12, fontSize: 12 },
-  habitRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-  habitLabel: { fontFamily: fonts.bodySemi, color: colors.text, fontSize: 15 },
-  habitValue: { fontFamily: fonts.bodyMed, color: colors.textMute, fontSize: 13, minWidth: 60, textAlign: "right" },
-  iconBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.brandLight, alignItems: "center", justifyContent: "center" },
-  iconBtnText: { color: colors.brand, fontFamily: fonts.headingExt, fontSize: 18 },
-  exerciseToggle: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 12, borderRadius: radius.lg, backgroundColor: colors.brandLight, marginTop: 12 },
-  exerciseDone: { backgroundColor: colors.brand },
-  exerciseText: { color: colors.brand, fontFamily: fonts.bodySemi, fontSize: 14 },
+  predLabel: { fontFamily: fonts.bodyMed, fontSize: 11, textTransform: "uppercase" },
+  predValue: { fontFamily: fonts.headingExt, fontSize: 18, marginTop: 4, letterSpacing: -0.4 },
+  predHint: { fontFamily: fonts.body, marginTop: 12, fontSize: 12 },
+  habitRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  habitLabel: { fontFamily: fonts.bodySemi, fontSize: 15 },
+  habitValue: { fontFamily: fonts.bodyMed, fontSize: 13, minWidth: 60, textAlign: "right" },
+  iconBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  iconBtnText: { fontFamily: fonts.headingExt, fontSize: 18 },
+  exerciseToggle: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, padding: 12, borderRadius: radius.lg, marginTop: 12 },
+  exerciseText: { fontFamily: fonts.bodySemi, fontSize: 14 },
   reportHighlight: { color: "#fff", fontFamily: fonts.headingExt, fontSize: 16, lineHeight: 22 },
   reportLine: { color: "rgba(255,255,255,0.9)", fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
   modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center", padding: 20 },
-  modalCard: { backgroundColor: colors.bgAlt, padding: 24, borderRadius: 24, width: "100%", maxWidth: 360 },
+  modalCard: { padding: 24, borderRadius: 24, width: "100%", maxWidth: 360 },
   input: {
-    backgroundColor: colors.bgWarm,
     borderRadius: radius.lg,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 18,
     fontFamily: fonts.bodyMed,
-    color: colors.text,
     marginTop: 4,
   },
 });

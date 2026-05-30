@@ -5,13 +5,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { X, Clock, Crown, Play, CheckCircle, Flame, Trophy, Star, Wind } from "lucide-react-native";
 import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withSpring, withSequence, withDelay } from "react-native-reanimated";
 import { useAuth } from "@/src/contexts/AuthContext";
+import { useTheme, lightColors } from "@/src/contexts/ThemeContext";
 import { supabase } from "@/src/lib/supabase";
 import { Card } from "@/src/components/Card";
 import { ProLockCard } from "@/src/components/ProLockCard";
 import { Button } from "@/src/components/Button";
 import { BreathingTimer } from "@/src/components/BreathingTimer";
 import { YogaPoseTimer } from "@/src/components/YogaPoseTimer";
-import { colors, fonts, radius } from "@/src/lib/theme";
+import { fonts, radius } from "@/src/lib/theme";
 
 const SEQUENCES = [
   {
@@ -89,6 +90,7 @@ const DAILY_BENEFITS = [
 export default function Yoga() {
   const router = useRouter();
   const { profile, session } = useAuth();
+  const { colors } = useTheme();
   const isPro = (profile?.subscription_tier || "free") !== "free";
   const [openId, setOpenId] = useState<string | null>(null);
   const [completedToday, setCompletedToday] = useState<string[]>([]);
@@ -262,12 +264,12 @@ export default function Yoga() {
   const nextMilestone = DAILY_BENEFITS.find(b => b.day > streak) || DAILY_BENEFITS[DAILY_BENEFITS.length - 1];
 
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={10}>
           <X size={22} color={colors.text} />
         </Pressable>
-        <Text style={styles.title}>Yoga Studio</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Yoga Studio</Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -275,24 +277,24 @@ export default function Yoga() {
         {/* Streak & Progress Card */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)}>
           <Card variant="highlight" style={styles.streakCard}>
-            <Animated.View style={[styles.streakBadge, celebrationStyle]}>
+            <Animated.View style={[styles.streakBadge, { backgroundColor: colors.brandLight }, celebrationStyle]}>
               <Flame color={streak > 0 ? "#FF6B35" : colors.textMute} size={24} />
-              <Text style={styles.streakNum}>{streak}</Text>
+              <Text style={[styles.streakNum, { color: colors.brand }]}>{streak}</Text>
             </Animated.View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.streakLabel}>Day Streak</Text>
+              <Text style={[styles.streakLabel, { color: colors.text }]}>Day Streak</Text>
               {streak > 0 ? (
-                <Text style={styles.streakHint}>
+                <Text style={[styles.streakHint, { color: colors.textMute }]}>
                   {nextMilestone.day - streak} days to {nextMilestone.icon} {nextMilestone.benefit}
                 </Text>
               ) : (
-                <Text style={styles.streakHint}>Start your journey today!</Text>
+                <Text style={[styles.streakHint, { color: colors.textMute }]}>Start your journey today!</Text>
               )}
             </View>
             {completedToday.length > 0 && (
-              <View style={styles.todayDone}>
+              <View style={[styles.todayDone, { backgroundColor: colors.success + "20" }]}>
                 <CheckCircle color={colors.success} size={16} />
-                <Text style={styles.todayDoneText}>Done today</Text>
+                <Text style={[styles.todayDoneText, { color: colors.success }]}>Done today</Text>
               </View>
             )}
           </Card>
@@ -302,12 +304,12 @@ export default function Yoga() {
         <Animated.View entering={FadeInDown.delay(150).duration(400)}>
           <Pressable onPress={() => setShowBreathing(true)} testID="breathing-btn">
             <Card style={styles.breathingCard}>
-              <View style={styles.breathingIcon}>
+              <View style={[styles.breathingIcon, { backgroundColor: colors.brandLight }]}>
                 <Wind color={colors.brand} size={24} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.breathingTitle}>Breathing Exercise</Text>
-                <Text style={styles.breathingDesc}>Box breathing, 4-7-8 & more</Text>
+                <Text style={[styles.breathingTitle, { color: colors.text }]}>Breathing Exercise</Text>
+                <Text style={[styles.breathingDesc, { color: colors.textMute }]}>Box breathing, 4-7-8 & more</Text>
               </View>
               <Play color={colors.brand} size={20} />
             </Card>
@@ -324,7 +326,7 @@ export default function Yoga() {
           </Animated.View>
         )}
 
-        <Text style={styles.intro}>
+        <Text style={[styles.intro, { color: colors.textMute }]}>
           Four practice flows you can do anywhere — no equipment. Tap a flow to see every pose with cues and hold times.
         </Text>
 
@@ -343,7 +345,7 @@ export default function Yoga() {
                 onPress={() => (locked ? router.push("/paywall") : setOpenId(expanded ? null : s.id))}
                 testID={`yoga-${s.id}`}
               >
-                <Card style={[styles.sequenceCard, done && styles.sequenceCardDone]}>
+                <Card style={[styles.sequenceCard, done && { borderColor: colors.success, borderWidth: 2 }]}>
                   <Image source={{ uri: s.hero }} style={styles.hero} />
                   {done && (
                     <View style={styles.doneOverlay}>
@@ -353,43 +355,43 @@ export default function Yoga() {
                   <View style={{ padding: 16 }}>
                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.seqTitle}>{s.title}</Text>
-                        <Text style={styles.seqBenefit}>{s.benefit}</Text>
+                        <Text style={[styles.seqTitle, { color: colors.text }]}>{s.title}</Text>
+                        <Text style={[styles.seqBenefit, { color: colors.textMute }]}>{s.benefit}</Text>
                       </View>
                       {locked ? (
-                        <View style={styles.lockBadge}>
+                        <View style={[styles.lockBadge, { backgroundColor: colors.brand }]}>
                           <Crown color={colors.sand} size={12} />
-                          <Text style={styles.lockText}>Upgrade</Text>
+                          <Text style={[styles.lockText, { color: colors.sand }]}>Upgrade</Text>
                         </View>
                       ) : done ? (
-                        <View style={styles.doneBadge}>
+                        <View style={[styles.doneBadge, { backgroundColor: colors.success + "20" }]}>
                           <CheckCircle color={colors.success} size={14} />
-                          <Text style={styles.doneText}>Done</Text>
+                          <Text style={[styles.doneText, { color: colors.success }]}>Done</Text>
                         </View>
                       ) : (
-                        <View style={styles.playBtn}>
+                        <View style={[styles.playBtn, { backgroundColor: colors.brand }]}>
                           <Play color="#fff" size={14} />
                         </View>
                       )}
                     </View>
                     <View style={styles.meta}>
                       <Clock color={colors.textMute} size={12} />
-                      <Text style={styles.metaText}>{s.minutes} min · {s.poses.length} poses · ~{s.calories} cal</Text>
+                      <Text style={[styles.metaText, { color: colors.textMute }]}>{s.minutes} min · {s.poses.length} poses · ~{s.calories} cal</Text>
                     </View>
                   </View>
                 </Card>
               </Pressable>
               
               {expanded && !locked && (
-                <Animated.View entering={FadeIn.duration(300)} style={styles.poseList}>
-                  <View style={styles.instructionHeader}>
+                <Animated.View entering={FadeIn.duration(300)} style={[styles.poseList, { backgroundColor: colors.bgAlt, borderColor: colors.border }]}>
+                  <View style={[styles.instructionHeader, { borderBottomColor: colors.border }]}>
                     <Star color={colors.brand} size={16} />
-                    <Text style={styles.instructionTitle}>Follow these poses in order</Text>
+                    <Text style={[styles.instructionTitle, { color: colors.brand }]}>Follow these poses in order</Text>
                   </View>
                   
                   {/* Start Guided Flow Button */}
                   <Pressable 
-                    style={styles.guidedFlowBtn} 
+                    style={[styles.guidedFlowBtn, { backgroundColor: colors.brand }]} 
                     onPress={() => setActiveFlowId(s.id)}
                     testID={`start-flow-${s.id}`}
                   >
@@ -403,15 +405,15 @@ export default function Yoga() {
                   </Pressable>
                   
                   {s.poses.map((p, i) => (
-                    <View key={i} style={styles.poseRow}>
-                      <View style={styles.poseNum}>
-                        <Text style={styles.poseNumText}>{i + 1}</Text>
+                    <View key={i} style={[styles.poseRow, { borderBottomColor: colors.border }]}>
+                      <View style={[styles.poseNum, { backgroundColor: colors.brandLight }]}>
+                        <Text style={[styles.poseNumText, { color: colors.brand }]}>{i + 1}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.poseName}>{p.name}</Text>
-                        <Text style={styles.poseNote}>{p.note}</Text>
+                        <Text style={[styles.poseName, { color: colors.text }]}>{p.name}</Text>
+                        <Text style={[styles.poseNote, { color: colors.textMute }]}>{p.note}</Text>
                       </View>
-                      <Text style={styles.poseDur}>{p.duration}</Text>
+                      <Text style={[styles.poseDur, { color: colors.brand }]}>{p.duration}</Text>
                     </View>
                   ))}
                   
@@ -427,9 +429,9 @@ export default function Yoga() {
                   )}
                   
                   {done && (
-                    <View style={styles.completedBanner}>
+                    <View style={[styles.completedBanner, { backgroundColor: colors.warning + "15" }]}>
                       <Trophy color={colors.warning} size={20} />
-                      <Text style={styles.completedText}>Completed today! Great job 🎉</Text>
+                      <Text style={[styles.completedText, { color: colors.warning }]}>Completed today! Great job 🎉</Text>
                     </View>
                   )}
                 </Animated.View>
@@ -441,21 +443,21 @@ export default function Yoga() {
         {/* Benefits Timeline */}
         <Animated.View entering={FadeInDown.delay(700).duration(400)}>
           <Card style={{ marginTop: 24 }}>
-            <Text style={styles.benefitsTitle}>Your Yoga Journey</Text>
-            <Text style={styles.benefitsSub}>Practice daily to unlock these benefits</Text>
+            <Text style={[styles.benefitsTitle, { color: colors.text }]}>Your Yoga Journey</Text>
+            <Text style={[styles.benefitsSub, { color: colors.textMute }]}>Practice daily to unlock these benefits</Text>
             <View style={styles.timeline}>
               {DAILY_BENEFITS.map((b, i) => {
                 const achieved = streak >= b.day;
                 return (
                   <View key={i} style={styles.timelineItem}>
-                    <View style={[styles.timelineDot, achieved && styles.timelineDotActive]}>
+                    <View style={[styles.timelineDot, { backgroundColor: colors.bgAlt, borderColor: colors.border }, achieved && { backgroundColor: colors.success + "20", borderColor: colors.success }]}>
                       <Text style={{ fontSize: 14 }}>{achieved ? "✓" : b.icon}</Text>
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={[styles.timelineDay, achieved && styles.timelineDayActive]}>
+                      <Text style={[styles.timelineDay, { color: colors.textMute }, achieved && { color: colors.text }]}>
                         Day {b.day}
                       </Text>
-                      <Text style={[styles.timelineBenefit, achieved && styles.timelineBenefitActive]}>
+                      <Text style={[styles.timelineBenefit, { color: colors.textDim }, achieved && { color: colors.textMute }]}>
                         {b.benefit}
                       </Text>
                     </View>
@@ -467,7 +469,7 @@ export default function Yoga() {
           </Card>
         </Animated.View>
 
-        <Text style={styles.footer}>
+        <Text style={[styles.footer, { color: colors.textDim }]}>
           New to yoga? Move slowly, breathe through the nose, and never push into sharp pain.
         </Text>
       </ScrollView>
@@ -489,9 +491,9 @@ export default function Yoga() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.bg },
+  safe: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
-  title: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.text },
+  title: { fontFamily: fonts.headingExt, fontSize: 18 },
   scroll: { padding: 20, paddingBottom: 40 },
   
   // Streak Card
@@ -500,34 +502,30 @@ const styles = StyleSheet.create({
     width: 56, 
     height: 56, 
     borderRadius: 28, 
-    backgroundColor: colors.brandLight, 
     alignItems: "center", 
     justifyContent: "center" 
   },
   streakNum: { 
     fontFamily: fonts.headingExt, 
     fontSize: 18, 
-    color: colors.brand, 
     marginTop: -2 
   },
-  streakLabel: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
-  streakHint: { fontFamily: fonts.body, fontSize: 12, color: colors.textMute, marginTop: 2 },
+  streakLabel: { fontFamily: fonts.bodySemi, fontSize: 15 },
+  streakHint: { fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
   todayDone: { 
     flexDirection: "row", 
     alignItems: "center", 
     gap: 4, 
-    backgroundColor: colors.success + "20", 
     paddingHorizontal: 10, 
     paddingVertical: 6, 
     borderRadius: 999 
   },
-  todayDoneText: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.success },
+  todayDoneText: { fontFamily: fonts.bodyMed, fontSize: 11 },
 
-  intro: { fontFamily: fonts.body, color: colors.textMute, fontSize: 14, lineHeight: 20, marginTop: 16 },
+  intro: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, marginTop: 16 },
   
   // Sequence Cards
   sequenceCard: { padding: 0, overflow: "hidden" },
-  sequenceCardDone: { borderColor: colors.success, borderWidth: 2 },
   hero: { width: "100%", height: 140 },
   doneOverlay: { 
     ...StyleSheet.absoluteFillObject, 
@@ -536,26 +534,25 @@ const styles = StyleSheet.create({
     alignItems: "center", 
     justifyContent: "center" 
   },
-  seqTitle: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.text, letterSpacing: -0.3 },
-  seqBenefit: { fontFamily: fonts.body, color: colors.textMute, fontSize: 13, marginTop: 2 },
+  seqTitle: { fontFamily: fonts.headingExt, fontSize: 18, letterSpacing: -0.3 },
+  seqBenefit: { fontFamily: fonts.body, fontSize: 13, marginTop: 2 },
   meta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 10 },
-  metaText: { fontFamily: fonts.bodyMed, fontSize: 12, color: colors.textMute },
-  playBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center" },
-  lockBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.brand, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  lockText: { fontFamily: fonts.bodySemi, color: colors.sand, fontSize: 11, textTransform: "uppercase" },
-  doneBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.success + "20", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  doneText: { fontFamily: fonts.bodySemi, color: colors.success, fontSize: 11, textTransform: "uppercase" },
+  metaText: { fontFamily: fonts.bodyMed, fontSize: 12 },
+  playBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  lockBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  lockText: { fontFamily: fonts.bodySemi, fontSize: 11, textTransform: "uppercase" },
+  doneBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  doneText: { fontFamily: fonts.bodySemi, fontSize: 11, textTransform: "uppercase" },
   
   // Pose List
-  poseList: { backgroundColor: colors.bgAlt, borderRadius: 18, padding: 14, marginTop: 8, borderWidth: 1, borderColor: colors.border },
-  instructionHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  instructionTitle: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.brand },
+  poseList: { borderRadius: 18, padding: 14, marginTop: 8, borderWidth: 1 },
+  instructionHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1 },
+  instructionTitle: { fontFamily: fonts.bodySemi, fontSize: 14 },
   
   // Guided Flow Button
   guidedFlowBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.brand,
     padding: 14,
     borderRadius: radius.lg,
     marginBottom: 16,
@@ -581,12 +578,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   
-  poseRow: { flexDirection: "row", paddingVertical: 10, gap: 12, borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth },
-  poseNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.brandLight, alignItems: "center", justifyContent: "center" },
-  poseNumText: { fontFamily: fonts.headingExt, color: colors.brand, fontSize: 13 },
-  poseName: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text },
-  poseNote: { fontFamily: fonts.body, fontSize: 12, color: colors.textMute, marginTop: 2, lineHeight: 17 },
-  poseDur: { fontFamily: fonts.bodyMed, fontSize: 11, color: colors.brand, textTransform: "uppercase", marginLeft: 6 },
+  poseRow: { flexDirection: "row", paddingVertical: 10, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  poseNum: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  poseNumText: { fontFamily: fonts.headingExt, fontSize: 13 },
+  poseName: { fontFamily: fonts.bodySemi, fontSize: 14 },
+  poseNote: { fontFamily: fonts.body, fontSize: 12, marginTop: 2, lineHeight: 17 },
+  poseDur: { fontFamily: fonts.bodyMed, fontSize: 11, textTransform: "uppercase", marginLeft: 6 },
   
   completedBanner: { 
     flexDirection: "row", 
@@ -594,34 +591,28 @@ const styles = StyleSheet.create({
     justifyContent: "center", 
     gap: 8, 
     marginTop: 16, 
-    backgroundColor: colors.warning + "15", 
     padding: 12, 
     borderRadius: 12 
   },
-  completedText: { fontFamily: fonts.bodySemi, color: colors.warning, fontSize: 14 },
+  completedText: { fontFamily: fonts.bodySemi, fontSize: 14 },
 
   // Benefits Timeline
-  benefitsTitle: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.text },
-  benefitsSub: { fontFamily: fonts.body, fontSize: 13, color: colors.textMute, marginTop: 4 },
+  benefitsTitle: { fontFamily: fonts.headingExt, fontSize: 18 },
+  benefitsSub: { fontFamily: fonts.body, fontSize: 13, marginTop: 4 },
   timeline: { marginTop: 16, gap: 12 },
   timelineItem: { flexDirection: "row", alignItems: "center" },
   timelineDot: { 
     width: 36, 
     height: 36, 
     borderRadius: 18, 
-    backgroundColor: colors.bgAlt, 
     alignItems: "center", 
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: colors.border,
   },
-  timelineDotActive: { backgroundColor: colors.success + "20", borderColor: colors.success },
-  timelineDay: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.textMute },
-  timelineDayActive: { color: colors.text },
-  timelineBenefit: { fontFamily: fonts.body, fontSize: 12, color: colors.textDim },
-  timelineBenefitActive: { color: colors.textMute },
+  timelineDay: { fontFamily: fonts.bodySemi, fontSize: 13 },
+  timelineBenefit: { fontFamily: fonts.body, fontSize: 12 },
 
-  footer: { fontFamily: fonts.body, color: colors.textDim, fontSize: 12, textAlign: "center", marginTop: 20, lineHeight: 18 },
+  footer: { fontFamily: fonts.body, fontSize: 12, textAlign: "center", marginTop: 20, lineHeight: 18 },
 
   // Breathing Card
   breathingCard: { 
@@ -634,7 +625,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.brandLight,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -642,12 +632,10 @@ const styles = StyleSheet.create({
   breathingTitle: { 
     fontFamily: fonts.bodySemi, 
     fontSize: 15, 
-    color: colors.text 
   },
   breathingDesc: { 
     fontFamily: fonts.body, 
     fontSize: 13, 
-    color: colors.textMute, 
     marginTop: 2 
   },
 });
