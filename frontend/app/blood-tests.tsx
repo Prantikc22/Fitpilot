@@ -2,14 +2,21 @@ import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View, Alert, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, Droplets, MapPin, Calendar, Clock, Check, ChevronRight, FileText, Shield, Truck } from "lucide-react-native";
+import { X, Droplets, MapPin, Calendar, Clock, Check, ChevronRight, FileText, Shield, Truck, AlertCircle } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useAuth } from "@/src/contexts/AuthContext";
+import { supabase } from "@/src/lib/supabase";
 import { Card } from "@/src/components/Card";
 import { Button } from "@/src/components/Button";
 import { ProLockCard } from "@/src/components/ProLockCard";
 import { colors, fonts, radius } from "@/src/lib/theme";
+
+const AVAILABLE_CITIES = [
+  { id: "kolkata", name: "Kolkata", available: true },
+  { id: "bangalore", name: "Bangalore", available: true },
+  { id: "gurgaon", name: "Gurgaon", available: true },
+];
 
 const TEST_PACKAGES = [
   {
@@ -48,12 +55,15 @@ const TEST_PACKAGES = [
 
 export default function BloodTests() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const isPro = (profile?.subscription_tier || "free") !== "free";
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-  const [step, setStep] = useState<"select" | "schedule" | "confirm">("select");
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [step, setStep] = useState<"city" | "select" | "schedule" | "confirm">("city");
   const [address, setAddress] = useState("");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const slots = [
     "Tomorrow, 7-9 AM",
@@ -62,7 +72,9 @@ export default function BloodTests() {
     "Day after, 9-11 AM",
   ];
 
-  const handleBook = () => {
+  const handleBook = async () => {
+    if (!session?.user || !selectedPackage || !selectedCity) return;
+    
     if (!address.trim()) {
       Alert.alert("Address Required", "Please enter your address for home collection.");
       return;
@@ -71,10 +83,36 @@ export default function BloodTests() {
       Alert.alert("Select Time", "Please select a preferred time slot.");
       return;
     }
-    setStep("confirm");
+
+    const selectedTest = TEST_PACKAGES.find((t) => t.id === selectedPackage);
+    if (!selectedTest) return;
+
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.from("blood_test_orders").insert({
+        user_id: session.user.id,
+        package_id: selectedTest.id,
+        package_name: selectedTest.name,
+        package_price: selectedTest.price,
+        tests: selectedTest.tests,
+        city: selectedCity,
+        address: address.trim(),
+        time_slot: selectedSlot,
+        status: "pending",
+      }).select("id").single();
+
+      if (error) throw error;
+      setOrderId(data?.id || null);
+      setStep("confirm");
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to place order. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const selectedTest = TEST_PACKAGES.find((t) => t.id === selectedPackage);
+  const cityName = AVAILABLE_CITIES.find(c => c.id === selectedCity)?.name || "";
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
@@ -97,7 +135,7 @@ export default function BloodTests() {
           </View>
         )}
 
-        {step === "select" && (
+        {step === "city" && (
           <>
             {/* Hero */}
             <Card variant="highlight" style={styles.heroCard}>
@@ -111,6 +149,59 @@ export default function BloodTests() {
                 <FeatureChip icon={FileText} text="Digital Reports" />
               </View>
             </Card>
+
+            <Text style={styles.sectionTitle}>Select Your City</Text>
+            <Text style={styles.cityNote}>
+              Currently available in select cities. We're expanding soon!
+            </Text>
+
+            <View style={styles.cityGrid}>
+              {AVAILABLE_CITIES.map((city, index) => (
+                <Animated.View key={city.id} entering={FadeInDown.delay(index * 100).duration(300)} style={styles.cityCardWrapper}>
+                  <Pressable
+                    style={[styles.cityCard, selectedCity === city.id && styles.cityCardSelected]}
+                    onPress={() => setSelectedCity(city.id)}
+                  >
+                    <MapPin size={24} color={selectedCity === city.id ? colors.brand : colors.textMute} />
+                    <Text style={[styles.cityName, selectedCity === city.id && styles.cityNameSelected]}>
+                      {city.name}
+                    </Text>
+                    <View style={styles.availableBadge}>
+                      <Text style={styles.availableText}>Available</Text>
+                    </View>
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </View>
+
+            <Card style={styles.otherCityCard}>
+              <AlertCircle size={20} color={colors.warning} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.otherCityTitle}>Not in your city?</Text>
+                <Text style={styles.otherCityText}>
+                  We're launching in Mumbai, Delhi, Chennai, Hyderabad, and Pune soon. Stay tuned!
+                </Text>
+              </View>
+            </Card>
+
+            <Button
+              title="Continue"
+              onPress={() => selectedCity && setStep("select")}
+              disabled={!selectedCity}
+              style={{ marginTop: 20 }}
+            />
+          </>
+        )}
+
+        {step === "select" && (
+          <>
+            <View style={styles.locationBar}>
+              <MapPin size={16} color={colors.brand} />
+              <Text style={styles.locationText}>{cityName}</Text>
+              <Pressable onPress={() => setStep("city")}>
+                <Text style={styles.changeLink}>Change</Text>
+              </Pressable>
+            </View>
 
             <Text style={styles.sectionTitle}>Select a Package</Text>
 
@@ -161,13 +252,22 @@ export default function BloodTests() {
               disabled={!selectedPackage}
               style={{ marginTop: 20 }}
             />
+            <Pressable onPress={() => setStep("city")} style={{ marginTop: 12 }}>
+              <Text style={styles.backLink}>← Change City</Text>
+            </Pressable>
           </>
         )}
 
         {step === "schedule" && selectedTest && (
           <>
             <Card style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>{selectedTest.name}</Text>
+              <View>
+                <Text style={styles.summaryTitle}>{selectedTest.name}</Text>
+                <View style={styles.summaryLocation}>
+                  <MapPin size={12} color={colors.textMute} />
+                  <Text style={styles.summaryLocationText}>{cityName}</Text>
+                </View>
+              </View>
               <Text style={styles.summaryPrice}>₹{selectedTest.price}</Text>
             </Card>
 
@@ -175,7 +275,7 @@ export default function BloodTests() {
             <TextInput
               value={address}
               onChangeText={setAddress}
-              placeholder="Enter your full address..."
+              placeholder={`Enter your full address in ${cityName}...`}
               placeholderTextColor={colors.textDim}
               style={styles.input}
               multiline
@@ -209,7 +309,7 @@ export default function BloodTests() {
               <Text style={styles.infoText}>NABL Accredited Labs • Certified Phlebotomists</Text>
             </View>
 
-            <Button title="Book Now" onPress={handleBook} style={{ marginTop: 20 }} />
+            <Button title="Book Now" onPress={handleBook} loading={submitting} style={{ marginTop: 20 }} />
             <Pressable onPress={() => setStep("select")} style={{ marginTop: 12 }}>
               <Text style={styles.backLink}>← Change Package</Text>
             </Pressable>
@@ -225,17 +325,20 @@ export default function BloodTests() {
             <Text style={styles.confirmSub}>
               {selectedTest.name} • {selectedSlot}
             </Text>
+            <View style={styles.confirmLocation}>
+              <MapPin size={14} color={colors.brand} />
+              <Text style={styles.confirmLocationText}>{cityName}</Text>
+            </View>
             <Text style={styles.confirmAddress}>{address}</Text>
+            {orderId && (
+              <Text style={styles.orderIdText}>Order ID: {orderId.slice(0, 8).toUpperCase()}</Text>
+            )}
             <Text style={styles.confirmNote}>
               Our phlebotomist will call you 30 minutes before arrival. Reports will be shared within 24-48 hours.
             </Text>
             <Button title="Done" onPress={() => router.back()} style={{ marginTop: 20, width: "100%" }} />
           </Card>
         )}
-
-        <Text style={styles.disclaimer}>
-          * This is a placeholder UI. Actual lab partnerships coming soon.
-        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -295,6 +398,97 @@ const styles = StyleSheet.create({
     color: colors.text, 
     marginTop: 24, 
     marginBottom: 12 
+  },
+
+  // City selection
+  cityNote: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textMute,
+    marginBottom: 16,
+  },
+  cityGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  cityCardWrapper: {
+    width: "48%",
+  },
+  cityCard: {
+    backgroundColor: colors.bgAlt,
+    borderRadius: radius.lg,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  cityCardSelected: {
+    borderColor: colors.brand,
+    backgroundColor: colors.brandLight,
+  },
+  cityName: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 16,
+    color: colors.text,
+    marginTop: 8,
+  },
+  cityNameSelected: {
+    color: colors.brand,
+  },
+  availableBadge: {
+    backgroundColor: colors.success + "20",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    marginTop: 8,
+  },
+  availableText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 10,
+    color: colors.success,
+  },
+  otherCityCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginTop: 20,
+    padding: 16,
+  },
+  otherCityTitle: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 14,
+    color: colors.text,
+  },
+  otherCityText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMute,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+
+  // Location bar
+  locationBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.brandLight,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignSelf: "flex-start",
+  },
+  locationText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 13,
+    color: colors.brand,
+  },
+  changeLink: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 12,
+    color: colors.textMute,
+    marginLeft: 8,
+    textDecorationLine: "underline",
   },
   
   packageCard: { 
@@ -362,6 +556,17 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   summaryTitle: { fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text },
+  summaryLocation: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  summaryLocationText: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textMute,
+  },
   summaryPrice: { fontFamily: fonts.headingExt, fontSize: 18, color: colors.brand },
   
   input: { 
@@ -428,12 +633,33 @@ const styles = StyleSheet.create({
     color: colors.brand, 
     marginTop: 8 
   },
+  confirmLocation: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 8,
+  },
+  confirmLocationText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 13,
+    color: colors.brand,
+  },
   confirmAddress: { 
     fontFamily: fonts.body, 
     fontSize: 13, 
     color: colors.textMute, 
     textAlign: "center",
     marginTop: 8,
+  },
+  orderIdText: {
+    fontFamily: fonts.bodyMed,
+    fontSize: 12,
+    color: colors.textDim,
+    marginTop: 8,
+    backgroundColor: colors.bgAlt,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   confirmNote: { 
     fontFamily: fonts.body, 
@@ -442,13 +668,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 12,
     lineHeight: 18,
-  },
-  
-  disclaimer: { 
-    fontFamily: fonts.body, 
-    fontSize: 11, 
-    color: colors.textDim, 
-    textAlign: "center", 
-    marginTop: 24 
   },
 });
