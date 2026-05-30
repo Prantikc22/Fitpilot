@@ -54,7 +54,8 @@ export function AchievementBadges({ earned, onBadgePress }: Props) {
               </Pressable>
             </Animated.View>
           );
-        })}n      </ScrollView>
+        })}
+      </ScrollView>
     </View>
   );
 }

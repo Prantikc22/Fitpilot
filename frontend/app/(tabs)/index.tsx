@@ -17,6 +17,9 @@ import { BMICard } from "@/src/components/BMICard";
 import { MarkdownText } from "@/src/components/MarkdownText";
 import { WeightChart, Point } from "@/src/components/WeightChart";
 import { DailyMotivationModal } from "@/src/components/DailyMotivation";
+import { StreakBadge } from "@/src/components/StreakBadge";
+import { AchievementBadges } from "@/src/components/AchievementBadges";
+import { CycleTracker } from "@/src/components/CycleTracker";
 import { colors, fonts } from "@/src/lib/theme";
 
 function startOfTodayISO() {

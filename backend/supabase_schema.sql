@@ -125,6 +125,110 @@ create policy "coach_messages self" on public.coach_messages for all to authenti
 drop policy if exists "weekly_reports self" on public.weekly_reports;
 create policy "weekly_reports self" on public.weekly_reports for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+-- =======================================
+-- GAMIFICATION & RETENTION TABLES
+-- =======================================
+
+-- User streaks tracking
+create table if not exists public.user_streaks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  streak_type text not null, -- 'daily', 'yoga', 'meal_logging', 'water'
+  current_streak int default 0,
+  longest_streak int default 0,
+  last_activity_date date,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id, streak_type)
+);
+
+alter table public.user_streaks enable row level security;
+drop policy if exists "user_streaks self" on public.user_streaks;
+create policy "user_streaks self" on public.user_streaks for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Achievement badges
+create table if not exists public.user_badges (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  badge_id text not null, -- e.g., 'first_scan', 'streak_7', 'protein_pro'
+  earned_at timestamptz default now(),
+  unique(user_id, badge_id)
+);
+
+alter table public.user_badges enable row level security;
+drop policy if exists "user_badges self" on public.user_badges;
+create policy "user_badges self" on public.user_badges for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Daily check-ins for AI Coach accountability
+create table if not exists public.daily_checkins (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date date not null,
+  type text, -- 'morning', 'evening', 'anytime'
+  notes text,
+  mood int, -- 1-5 scale
+  created_at timestamptz default now(),
+  unique(user_id, date)
+);
+
+alter table public.daily_checkins enable row level security;
+drop policy if exists "daily_checkins self" on public.daily_checkins;
+create policy "daily_checkins self" on public.daily_checkins for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Yoga completions tracking
+create table if not exists public.yoga_completions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  sequence_id text not null,
+  completed_date date not null,
+  duration_minutes int,
+  calories_burned int,
+  created_at timestamptz default now()
+);
+create index if not exists yoga_completions_user_idx on public.yoga_completions (user_id, completed_date desc);
+
+alter table public.yoga_completions enable row level security;
+drop policy if exists "yoga_completions self" on public.yoga_completions;
+create policy "yoga_completions self" on public.yoga_completions for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- =======================================
+-- PCOS/PCOD & CYCLE TRACKING TABLES
+-- =======================================
+
+-- Cycle/Period logs for PCOS tracking
+create table if not exists public.cycle_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  date date not null,
+  flow text, -- 'none', 'spotting', 'light', 'medium', 'heavy'
+  symptoms text[], -- array of symptom IDs
+  notes text,
+  created_at timestamptz default now(),
+  unique(user_id, date)
+);
+create index if not exists cycle_logs_user_idx on public.cycle_logs (user_id, date desc);
+
+alter table public.cycle_logs enable row level security;
+drop policy if exists "cycle_logs self" on public.cycle_logs;
+create policy "cycle_logs self" on public.cycle_logs for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Health programs enrollment
+create table if not exists public.program_enrollments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  program_type text not null, -- 'pcos', 'weight_loss', 'muscle_gain', etc.
+  start_date date default current_date,
+  target_date date,
+  status text default 'active', -- 'active', 'paused', 'completed'
+  settings jsonb,
+  created_at timestamptz default now(),
+  unique(user_id, program_type)
+);
+
+alter table public.program_enrollments enable row level security;
+drop policy if exists "program_enrollments self" on public.program_enrollments;
+create policy "program_enrollments self" on public.program_enrollments for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
